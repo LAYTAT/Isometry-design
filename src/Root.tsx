@@ -16,7 +16,7 @@ export const RemotionRoot: React.FC = () => {
       />
 
       <Composition
-        id="Scene_IsometryHold"
+        id="Scene-IsometryHold"
         component={() => <SceneSolo kind="isometry-hold" />}
         durationInFrames={90}
         fps={FPS}
@@ -24,7 +24,7 @@ export const RemotionRoot: React.FC = () => {
         height={HEIGHT}
       />
       <Composition
-        id="Scene_Brain"
+        id="Scene-Brain"
         component={() => <SceneSolo kind="brain" />}
         durationInFrames={90}
         fps={FPS}
@@ -32,7 +32,7 @@ export const RemotionRoot: React.FC = () => {
         height={HEIGHT}
       />
       <Composition
-        id="Scene_BrainToComputer"
+        id="Scene-BrainToComputer"
         component={() => <SceneSolo kind="brain-to-computer" />}
         durationInFrames={90}
         fps={FPS}
@@ -40,7 +40,7 @@ export const RemotionRoot: React.FC = () => {
         height={HEIGHT}
       />
       <Composition
-        id="Scene_Computer"
+        id="Scene-Computer"
         component={() => <SceneSolo kind="computer" />}
         durationInFrames={90}
         fps={FPS}
@@ -48,7 +48,7 @@ export const RemotionRoot: React.FC = () => {
         height={HEIGHT}
       />
       <Composition
-        id="Scene_UseCase1"
+        id="Scene-UseCase1"
         component={() => <SceneSolo kind="usecase-1" />}
         durationInFrames={90}
         fps={FPS}
@@ -56,7 +56,7 @@ export const RemotionRoot: React.FC = () => {
         height={HEIGHT}
       />
       <Composition
-        id="Scene_UseCase2"
+        id="Scene-UseCase2"
         component={() => <SceneSolo kind="usecase-2" />}
         durationInFrames={90}
         fps={FPS}
@@ -64,7 +64,7 @@ export const RemotionRoot: React.FC = () => {
         height={HEIGHT}
       />
       <Composition
-        id="Scene_IsometryEnd"
+        id="Scene-IsometryEnd"
         component={() => <SceneSolo kind="isometry-end" />}
         durationInFrames={90}
         fps={FPS}
