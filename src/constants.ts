@@ -16,9 +16,10 @@ export const LAYERS = [
   { z: 1.3, opacity: 0.9 },
 ];
 
-export const STATE_A: [number, number] = [0, 90];   // ISOMETRY hold
-export const STATE_B: [number, number] = [90, 165]; // ISOMETRY -> brain
-export const STATE_C: [number, number] = [165, 240]; // brain -> BCI window
-export const STATE_D: [number, number] = [240, 300]; // BCI window -> computer
-export const STATE_E: [number, number] = [300, 360]; // computer -> dot
-export const STATE_F: [number, number] = [360, 450]; // dot -> ISOMETRY
+export const STATE_A: [number, number] = [0, 60];   // ISOMETRY hold
+export const STATE_B: [number, number] = [60, 120]; // ISOMETRY -> brain
+export const STATE_C: [number, number] = [120, 180]; // brain -> brain-to-computer frame
+export const STATE_D: [number, number] = [180, 240]; // brain-to-computer -> computer
+export const STATE_E: [number, number] = [240, 300]; // computer -> use case 1
+export const STATE_F: [number, number] = [300, 360]; // use case 1 -> use case 2
+export const STATE_G: [number, number] = [360, 450]; // use case 2 -> ISOMETRY

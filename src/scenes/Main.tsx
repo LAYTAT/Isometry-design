@@ -10,9 +10,11 @@ import {
   sampleLogoTargets,
   sampleCoreTargets,
   sampleBrainToComputerAssetTargets,
+  sampleRoundedRectTargets,
+  sampleCircleTargets,
   matchBySort,
 } from "../utils/targets";
-import { STATE_A, STATE_B, STATE_C, STATE_D, STATE_E, STATE_F } from "../constants";
+import { STATE_A, STATE_B, STATE_C, STATE_D, STATE_E, STATE_F, STATE_G } from "../constants";
 
 const inRange = (f: number, [a, b]: [number, number]) => f >= a && f < b;
 
@@ -23,10 +25,12 @@ export const Main: React.FC = () => {
     const brain = sampleBrainTargets();
     const bci = sampleBrainToComputerAssetTargets();
     const computer = sampleComputerTargets();
+    const use1 = sampleRoundedRectTargets(520, 300, 50);
+    const use2 = sampleCircleTargets(180);
     const core = sampleCoreTargets();
     const logoRaw = sampleLogoTargets();
     const logo = matchBySort(core, logoRaw);
-    return { brain, bci, computer, core, logo, logoRaw };
+    return { brain, bci, computer, use1, use2, core, logo, logoRaw };
   }, []);
 
   let seg;
@@ -39,11 +43,13 @@ export const Main: React.FC = () => {
   } else if (inRange(frame, STATE_D)) {
     seg = { from: targets.bci, to: targets.computer, t: clamp(remap(frame, STATE_D[0], STATE_D[1])), mode: "morph" as const };
   } else if (inRange(frame, STATE_E)) {
-    seg = { from: targets.computer, to: targets.core, t: clamp(remap(frame, STATE_E[0], STATE_E[1])), mode: "morph" as const };
+    seg = { from: targets.computer, to: targets.use1, t: clamp(remap(frame, STATE_E[0], STATE_E[1])), mode: "morph" as const };
+  } else if (inRange(frame, STATE_F)) {
+    seg = { from: targets.use1, to: targets.use2, t: clamp(remap(frame, STATE_F[0], STATE_F[1])), mode: "morph" as const };
   } else {
-    const tLogo = clamp(remap(frame, STATE_F[0], STATE_F[1]));
+    const tLogo = clamp(remap(frame, STATE_G[0], STATE_G[1]));
     const hold = frame >= 420;
-    seg = { from: targets.core, to: targets.logo, t: hold ? 1 : tLogo, mode: "logo" as const };
+    seg = { from: targets.use2, to: targets.logo, t: hold ? 1 : tLogo, mode: "logo" as const };
   }
 
   const bloom = Math.max(
