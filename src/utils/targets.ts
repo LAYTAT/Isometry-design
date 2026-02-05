@@ -1,5 +1,6 @@
 import { DOT_SIZE, HEIGHT, WIDTH, N_DOTS } from "../constants";
 import { noise2 } from "./noise";
+import { BRAIN_TO_COMPUTER_DOTS_SOURCE } from "../assets/brainToComputerDots";
 
 export type Point = { x: number; y: number; r: number };
 
