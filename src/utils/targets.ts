@@ -292,3 +292,17 @@ export const sampleBCIWindowTargets = (): Point[] => {
 
   return padPoints(pts);
 };
+
+export const sampleBrainToComputerAssetTargets = (): Point[] => {
+  const srcW = 1536;
+  const srcH = 1049;
+  const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 0.9;
+  const ox = WIDTH / 2 - (srcW * scale) / 2;
+  const oy = HEIGHT / 2 - (srcH * scale) / 2;
+  const pts = BRAIN_TO_COMPUTER_DOTS_SOURCE.map(([x, y, r]) => ({
+    x: x * scale + ox,
+    y: y * scale + oy,
+    r: r * (scale * 0.85),
+  }));
+  return padPoints(pts);
+};

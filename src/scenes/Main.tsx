@@ -9,7 +9,7 @@ import {
   sampleComputerTargets,
   sampleLogoTargets,
   sampleCoreTargets,
-  sampleBCIWindowTargets,
+  sampleBrainToComputerAssetTargets,
   matchBySort,
 } from "../utils/targets";
 import { STATE_A, STATE_B, STATE_C, STATE_D, STATE_E, STATE_F } from "../constants";
@@ -21,7 +21,7 @@ export const Main: React.FC = () => {
 
   const targets = useMemo(() => {
     const brain = sampleBrainTargets();
-    const bci = sampleBCIWindowTargets();
+    const bci = sampleBrainToComputerAssetTargets();
     const computer = sampleComputerTargets();
     const core = sampleCoreTargets();
     const logoRaw = sampleLogoTargets();
