@@ -1,6 +1,6 @@
-import "./index.css";
 import { Composition } from "remotion";
 import { MyComposition } from "./Composition";
+import { DURATION_IN_FRAMES, FPS, WIDTH, HEIGHT } from "./constants";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -8,10 +8,10 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="IsometryPromo"
         component={MyComposition}
-        durationInFrames={450}
-        fps={30}
-        width={1280}
-        height={720}
+        durationInFrames={DURATION_IN_FRAMES}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
       />
     </>
   );
