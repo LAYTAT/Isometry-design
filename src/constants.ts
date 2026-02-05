@@ -17,7 +17,8 @@ export const LAYERS = [
 ];
 
 export const STATE_A: [number, number] = [0, 90];   // ISOMETRY hold
-export const STATE_B: [number, number] = [90, 180]; // ISOMETRY -> brain
-export const STATE_C: [number, number] = [180, 270]; // brain -> computer
-export const STATE_D: [number, number] = [270, 330]; // computer -> dot
-export const STATE_E: [number, number] = [330, 450]; // dot -> ISOMETRY
+export const STATE_B: [number, number] = [90, 165]; // ISOMETRY -> brain
+export const STATE_C: [number, number] = [165, 240]; // brain -> BCI window
+export const STATE_D: [number, number] = [240, 300]; // BCI window -> computer
+export const STATE_E: [number, number] = [300, 360]; // computer -> dot
+export const STATE_F: [number, number] = [360, 450]; // dot -> ISOMETRY

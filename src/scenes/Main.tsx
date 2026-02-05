@@ -9,9 +9,10 @@ import {
   sampleComputerTargets,
   sampleLogoTargets,
   sampleCoreTargets,
+  sampleBCIWindowTargets,
   matchBySort,
 } from "../utils/targets";
-import { STATE_A, STATE_B, STATE_C, STATE_D, STATE_E } from "../constants";
+import { STATE_A, STATE_B, STATE_C, STATE_D, STATE_E, STATE_F } from "../constants";
 
 const inRange = (f: number, [a, b]: [number, number]) => f >= a && f < b;
 
@@ -20,11 +21,12 @@ export const Main: React.FC = () => {
 
   const targets = useMemo(() => {
     const brain = sampleBrainTargets();
+    const bci = sampleBCIWindowTargets();
     const computer = sampleComputerTargets();
     const core = sampleCoreTargets();
     const logoRaw = sampleLogoTargets();
     const logo = matchBySort(core, logoRaw);
-    return { brain, computer, core, logo, logoRaw };
+    return { brain, bci, computer, core, logo, logoRaw };
   }, []);
 
   let seg;
@@ -33,12 +35,14 @@ export const Main: React.FC = () => {
   } else if (inRange(frame, STATE_B)) {
     seg = { from: targets.logo, to: targets.brain, t: clamp(remap(frame, STATE_B[0], STATE_B[1])), mode: "morph" as const };
   } else if (inRange(frame, STATE_C)) {
-    seg = { from: targets.brain, to: targets.computer, t: clamp(remap(frame, STATE_C[0], STATE_C[1])), mode: "morph" as const };
+    seg = { from: targets.brain, to: targets.bci, t: clamp(remap(frame, STATE_C[0], STATE_C[1])), mode: "morph" as const };
   } else if (inRange(frame, STATE_D)) {
-    seg = { from: targets.computer, to: targets.core, t: clamp(remap(frame, STATE_D[0], STATE_D[1])), mode: "morph" as const };
+    seg = { from: targets.bci, to: targets.computer, t: clamp(remap(frame, STATE_D[0], STATE_D[1])), mode: "morph" as const };
+  } else if (inRange(frame, STATE_E)) {
+    seg = { from: targets.computer, to: targets.core, t: clamp(remap(frame, STATE_E[0], STATE_E[1])), mode: "morph" as const };
   } else {
-    const tLogo = clamp(remap(frame, STATE_E[0], STATE_E[1]));
-    const hold = frame >= 405;
+    const tLogo = clamp(remap(frame, STATE_F[0], STATE_F[1]));
+    const hold = frame >= 420;
     seg = { from: targets.core, to: targets.logo, t: hold ? 1 : tLogo, mode: "logo" as const };
   }
 

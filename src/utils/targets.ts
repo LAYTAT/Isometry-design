@@ -265,3 +265,30 @@ export const sampleCoreTargets = (): Point[] => {
   }
   return pts;
 };
+
+export const sampleBCIWindowTargets = (): Point[] => {
+  const pts: Point[] = [];
+  const frame = sampleRoundedRectTargets(1100, 520, 50);
+  pts.push(...frame.slice(0, Math.floor(N_DOTS * 0.55)));
+
+  const bx = WIDTH / 2 - 260;
+  const by = HEIGHT / 2;
+  for (let i = 0; i < N_DOTS * 0.2; i++) {
+    const a = (i / (N_DOTS * 0.2)) * Math.PI * 2;
+    pts.push({ x: bx + Math.cos(a) * 90, y: by + Math.sin(a) * 70, r: DOT_SIZE });
+  }
+
+  const ex = WIDTH / 2;
+  const ey = HEIGHT / 2 + 10;
+  for (let i = 0; i < N_DOTS * 0.05; i++) {
+    const a = (i / (N_DOTS * 0.05)) * Math.PI * 2;
+    pts.push({ x: ex + Math.cos(a) * 16, y: ey + Math.sin(a) * 16, r: DOT_SIZE });
+  }
+
+  const lx = WIDTH / 2 + 300;
+  const ly = HEIGHT / 2 + 40;
+  const rect = sampleRoundedRectTargets(200, 140, 20);
+  pts.push(...rect.slice(0, Math.floor(N_DOTS * 0.2)).map((p) => ({ x: p.x - WIDTH/2 + lx, y: p.y - HEIGHT/2 + ly, r: p.r })));
+
+  return padPoints(pts);
+};
