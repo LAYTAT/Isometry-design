@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isometry Dot Editor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+    }
+    
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+    
+    /* Preview Panel */
+    .preview-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #000;
+    }
+    
+    .preview-header {
+      padding: 12px 20px;
+      background: #16213e;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #0f3460;
+    }
+    
+    .preview-header h2 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+    
+    .scene-selector {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .scene-btn {
+      padding: 6px 12px;
+      background: #0f3460;
+      border: none;
+      border-radius: 4px;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    
+    .scene-btn:hover { background: #1a4a7a; }
+    .scene-btn.active { background: #e94560; color: white; }
+    
+    #canvas-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    #preview-canvas {
+      max-width: 100%;
+      max-height: 100%;
+      background: #000;
+      border-radius: 8px;
+      box-shadow: 0 0 40px rgba(233, 69, 96, 0.2);
+    }
+    
+    /* Control Panel */
+    .control-panel {
+      width: 360px;
+      background: #16213e;
+      overflow-y: auto;
+      border-left: 1px solid #0f3460;
+    }
+    
+    .panel-header {
+      padding: 16px 20px;
+      background: #0f3460;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .panel-header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .panel-header p {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    .section {
+      padding: 16px 20px;
+      border-bottom: 1px solid #0f3460;
+    }
+    
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #e94560;
+      margin-bottom: 12px;
+    }
+    
+    .control-group {
+      margin-bottom: 16px;
+    }
+    
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    
+    .control-label span {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    .control-value {
+      font-size: 12px;
+      color: #e94560;
+      font-family: 'Monaco', 'Menlo', monospace;
+    }
+    
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #0f3460;
+      border-radius: 3px;
+      outline: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #e94560;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #e94560;
+    }
+    
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .checkbox-row label {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    
+    .btn-primary {
+      background: #e94560;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #ff6b6b;
+    }
+    
+    .btn-secondary {
+      background: #0f3460;
+      color: #94a3b8;
+    }
+    
+    .btn-secondary:hover {
+      background: #1a4a7a;
+      color: white;
+    }
+    
+    /* Playback Controls */
+    .playback-controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .playback-controls .btn {
+      flex: 1;
+      margin-top: 0;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f3460;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+    
+    .toast.show {
+      opacity: 1;
+    }
+    
+    /* Timeline */
+    .timeline {
+      padding: 12px 20px;
+      background: #0f3460;
+    }
+    
+    .timeline-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    
+    #timeline-slider {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Preview Panel -->
+    <div class="preview-panel">
+      <div class="preview-header">
+        <h2>Preview</h2>
+        <div class="scene-selector">
+          <button class="scene-btn active" data-scene="logo">Logo</button>
+          <button class="scene-btn" data-scene="brain">Brain</button>
+          <button class="scene-btn" data-scene="bci">BCI</button>
+          <button class="scene-btn" data-scene="clinical">Clinical</button>
+          <button class="scene-btn" data-scene="assistive">Assistive</button>
+        </div>
+      </div>
+      
+      <div class="timeline">
+        <div class="timeline-label">
+          <span>Frame: <span id="frame-display">0</span></span>
+          <span id="time-display">0:00</span>
+        </div>
+        <input type="range" id="timeline-slider" min="0" max="764" value="0">
+      </div>
+      
+      <div id="canvas-container">
+        <canvas id="preview-canvas" width="1920" height="1080"></canvas>
+      </div>
+    </div>
+    
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="panel-header">
+        <h1>Isometry Editor</h1>
+        <p>Adjust parameters and see changes live</p>
+      </div>
+      
+      <!-- Scene Controls (dynamic) -->
+      <div id="scene-controls"></div>
+      
+      <!-- Global Controls -->
+      <div class="section">
+        <div class="section-title">Particles</div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Dot Size</span>
+            <span class="control-value" id="dotSize-value">3</span>
+          </div>
+          <input type="range" id="dotSize" min="1" max="10" step="0.5" value="3">
+        </div>
+        
+        <div class="control-group">
+          <div class="control-label">
+            <span>Dot Opacity</span>
+            <span class="control-value" id="dotOpacity-value">0.85</span>
+          </div>
+          <input type="range" id="dotOpacity" min="0.1" max="1" step="0.05" value="0.85">
+        </div>
+      </div>
+      
+      <!-- Actions -->
+      <div class="section">
+        <div class="section-title">Actions</div>
+        
+        <div class="playback-controls">
+          <button class="btn btn-secondary" id="play-btn">▶ Play</button>
+          <button class="btn btn-secondary" id="reset-btn">↺ Reset</button>
+        </div>
+        
+        <button class="btn btn-primary" id="export-btn">📋 Copy Config</button>
+        <button class="btn btn-secondary" id="download-btn">💾 Download config.ts</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="toast" id="toast"></div>
+  
+  <script type="module" src="editor.js"></script>
+</body>
+</html>

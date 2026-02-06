@@ -34,6 +34,8 @@
     "render:preview": "remotion render src/index.ts IsometryPromo ./preview.mp4 --codec h264 --concurrency 5 --every-nth-frame 2",
     "still": "remotion still src/index.ts Scene-BrainToComputer ./still.png --frame 0",
     "generate-asset": "npx ts-node scripts/generate-asset.ts",
+    "editor": "node editor/bundle-assets.js && node editor/serve.js",
+    "editor:bundle": "node editor/bundle-assets.js",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"
   },
