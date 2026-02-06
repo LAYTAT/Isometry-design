@@ -36,6 +36,7 @@
     "generate-asset": "npx ts-node scripts/generate-asset.ts",
     "sync-assets": "node scripts/sync-assets.js",
     "sync-assets:watch": "node scripts/sync-assets.js watch",
+    "sync-assets:reverse": "node scripts/sync-assets-reverse.js",
     "editor": "npm run sync-assets && node editor/serve.js",
     "editor:bundle": "node editor/bundle-assets.js",
     "upgrade": "remotion upgrade",
