@@ -4,11 +4,12 @@ import { BRAIN_TO_COMPUTER_DOTS_SOURCE } from "../assets/brainToComputerDots";
 import { BRAIN_DOTS_SOURCE } from "../assets/brainDots";
 import { CLINICAL_DOTS_SOURCE } from "../assets/clinicalDots";
 import { ASSISTIVE_DOTS_SOURCE } from "../assets/assistiveDots";
+import { LOGO_DOTS_SOURCE } from "../assets/logoDots";
 
 const { width: WIDTH, height: HEIGHT } = CONFIG.video;
 const { count: N_DOTS, defaultSize: DOT_SIZE } = CONFIG.particles;
 
-export type Point = { x: number; y: number; r: number };
+export type Point = { x: number; y: number; r: number; color?: string };
 
 // ===================
 // UTILITY FUNCTIONS
@@ -25,7 +26,7 @@ export const padPoints = (pts: Point[], n = N_DOTS): Point[] => {
   while (out.length < n) {
     const p = pts[i % pts.length];
     const n2 = noise2(i + out.length);
-    out.push({ x: p.x + n2.x * 0.6, y: p.y + n2.y * 0.6, r: p.r });
+    out.push({ x: p.x + n2.x * 0.6, y: p.y + n2.y * 0.6, r: p.r, ...(p.color ? { color: p.color } : {}) });
     i++;
   }
   return out;
@@ -54,7 +55,7 @@ export const matchBySort = (from: Point[], to: Point[]) => {
  * Generic function to transform source dots to screen coordinates
  */
 function transformAssetToScreen(
-  source: Array<[number, number, number]>,
+  source: Array<[number, number, number] | [number, number, number, string]>,
   config: {
     sourceWidth: number;
     sourceHeight: number;
@@ -73,19 +74,19 @@ function transformAssetToScreen(
   }
 ): Point[] {
   const { sourceWidth, sourceHeight, scale, offsetX, offsetY, dotScale, filterBorder, borderFilter } = config;
-  
+
   // Calculate scale to fit in viewport
   const fitScale = Math.min(WIDTH / sourceWidth, HEIGHT / sourceHeight) * scale;
-  
+
   // Calculate offsets to center
   const ox = WIDTH / 2 - (sourceWidth * fitScale) / 2 + offsetX;
   const oy = HEIGHT / 2 - (sourceHeight * fitScale) / 2 + offsetY;
-  
+
   // Filter border dots if configured
   let filtered = source;
   if (filterBorder && borderFilter) {
     const { leftEdge, rightEdge, topEdge, bottomEdge, mode } = borderFilter;
-    
+
     if (mode === 'edges') {
       // Filter entire edges
       filtered = source.filter(([x, y]) => {
@@ -106,14 +107,15 @@ function transformAssetToScreen(
       });
     }
   }
-  
-  // Transform to screen coordinates
-  const pts = filtered.map(([x, y, r]) => ({
-    x: x * fitScale + ox,
-    y: y * fitScale + oy,
-    r: r * (fitScale * dotScale),
+
+  // Transform to screen coordinates, preserving color if present
+  const pts = filtered.map((entry) => ({
+    x: entry[0] * fitScale + ox,
+    y: entry[1] * fitScale + oy,
+    r: entry[2] * (fitScale * dotScale),
+    ...(entry[3] ? { color: entry[3] } : {}),
   }));
-  
+
   return padPoints(pts);
 }
 
@@ -122,8 +124,20 @@ function transformAssetToScreen(
 // ===================
 
 export const sampleLogoTargets = (): Point[] => {
+  // Use saved logo asset if available
+  if (LOGO_DOTS_SOURCE && LOGO_DOTS_SOURCE.length > 0) {
+    const pts = LOGO_DOTS_SOURCE.map((entry) => ({
+      x: entry[0],
+      y: entry[1],
+      r: entry[2],
+      ...(entry[3] ? { color: entry[3] } : {}),
+    }));
+    return padPoints(pts);
+  }
+
+  // Fallback: generate procedurally
   const { dotSize, gap, verticalOffset } = CONFIG.scenes.logo;
-  
+
   const FONT: Record<string, string[]> = {
     I: ["111", "010", "010", "010", "111"],
     S: ["1111", "1000", "1110", "0001", "1110"],
@@ -134,7 +148,7 @@ export const sampleLogoTargets = (): Point[] => {
     R: ["1110", "1001", "1110", "1010", "1001"],
     Y: ["10001", "01010", "00100", "00100", "00100"],
   };
-  
+
   const text = "ISOMETRY";
   const rows = 5;
   const chars = text.split("");
@@ -163,61 +177,35 @@ export const sampleLogoTargets = (): Point[] => {
 };
 
 // ===================
-// ASSET-BASED TARGETS
+// DIRECT ASSET LOADING (coordinates are screen-space from editor)
 // ===================
 
+function loadAssetDirect(
+  source: Array<[number, number, number] | [number, number, number, string]>
+): Point[] {
+  const pts = source.map((entry) => ({
+    x: entry[0],
+    y: entry[1],
+    r: entry[2],
+    ...(entry[3] ? { color: entry[3] } : {}),
+  }));
+  return padPoints(pts);
+}
+
 export const sampleBrainAssetTargets = (): Point[] => {
-  const cfg = CONFIG.scenes.brain;
-  return transformAssetToScreen(BRAIN_DOTS_SOURCE, {
-    sourceWidth: cfg.sourceWidth,
-    sourceHeight: cfg.sourceHeight,
-    scale: cfg.scale,
-    offsetX: cfg.offsetX,
-    offsetY: cfg.offsetY,
-    dotScale: cfg.dotScale,
-  });
+  return loadAssetDirect(BRAIN_DOTS_SOURCE);
 };
 
 export const sampleBrainToComputerAssetTargets = (): Point[] => {
-  const cfg = CONFIG.scenes.bci;
-  return transformAssetToScreen(BRAIN_TO_COMPUTER_DOTS_SOURCE, {
-    sourceWidth: cfg.sourceWidth,
-    sourceHeight: cfg.sourceHeight,
-    scale: cfg.scale,
-    offsetX: cfg.offsetX,
-    offsetY: cfg.offsetY,
-    dotScale: cfg.dotScale,
-    filterBorder: cfg.filterBorder,
-    borderFilter: cfg.borderFilter,
-  });
+  return loadAssetDirect(BRAIN_TO_COMPUTER_DOTS_SOURCE);
 };
 
 export const sampleClinicalAssetTargets = (): Point[] => {
-  const cfg = CONFIG.scenes.clinical;
-  return transformAssetToScreen(CLINICAL_DOTS_SOURCE, {
-    sourceWidth: cfg.sourceWidth,
-    sourceHeight: cfg.sourceHeight,
-    scale: cfg.scale,
-    offsetX: cfg.offsetX,
-    offsetY: cfg.offsetY,
-    dotScale: cfg.dotScale,
-    filterBorder: cfg.filterBorder,
-    borderFilter: cfg.borderFilter,
-  });
+  return loadAssetDirect(CLINICAL_DOTS_SOURCE);
 };
 
 export const sampleAssistiveAssetTargets = (): Point[] => {
-  const cfg = CONFIG.scenes.assistive;
-  return transformAssetToScreen(ASSISTIVE_DOTS_SOURCE, {
-    sourceWidth: cfg.sourceWidth,
-    sourceHeight: cfg.sourceHeight,
-    scale: cfg.scale,
-    offsetX: cfg.offsetX,
-    offsetY: cfg.offsetY,
-    dotScale: cfg.dotScale,
-    filterBorder: cfg.filterBorder,
-    borderFilter: cfg.borderFilter,
-  });
+  return loadAssetDirect(ASSISTIVE_DOTS_SOURCE);
 };
 
 // ===================

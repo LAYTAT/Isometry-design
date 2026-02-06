@@ -7,7 +7,7 @@ import { noise2 } from "../utils/noise";
 
 export type Segment = { from: Point[]; to: Point[]; t: number; mode: "wake" | "sweep" | "morph" | "pulse" | "logo" };
 
-type Particle = { id: number; x: number; y: number; vx: number; vy: number; baseX: number; baseY: number };
+type Particle = { id: number; x: number; y: number; vx: number; vy: number; baseX: number; baseY: number; color?: string };
 
 export const ParticleField: React.FC<{ seg: Segment }> = ({ seg }) => {
   const frame = useCurrentFrame();
@@ -15,7 +15,7 @@ export const ParticleField: React.FC<{ seg: Segment }> = ({ seg }) => {
   const particles = useMemo<Particle[]>(() => {
     return new Array(N_DOTS).fill(0).map((_, i) => {
       const p = seg.from[i] ?? seg.from[i % seg.from.length];
-      return { id: i, x: p.x, y: p.y, vx: 0, vy: 0, baseX: p.x, baseY: p.y };
+      return { id: i, x: p.x, y: p.y, vx: 0, vy: 0, baseX: p.x, baseY: p.y, color: p.color };
     });
   }, [seg.from]);
 
@@ -39,6 +39,10 @@ export const ParticleField: React.FC<{ seg: Segment }> = ({ seg }) => {
       p.vy = (p.vy + ay) * damping;
       p.x += p.vx;
       p.y += p.vy;
+      // Adopt target color once transition is past halfway
+      if (k > 0.5 && q.color) {
+        p.color = q.color;
+      }
     }
   }
 
@@ -97,7 +101,7 @@ export const ParticleField: React.FC<{ seg: Segment }> = ({ seg }) => {
               alpha *= lerp(0.9, 1.0, settle);
             }
 
-            return <circle key={p.id} cx={x} cy={y} r={r} fill={DOT_COLOR} opacity={alpha} />;
+            return <circle key={p.id} cx={x} cy={y} r={r} fill={p.color || DOT_COLOR} opacity={alpha} />;
           })}
         </g>
       ))}
