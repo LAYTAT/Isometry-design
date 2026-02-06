@@ -242,6 +242,67 @@ npx remotion still src/index.ts Scene-BrainToComputer ./still.png --frame 0
 - `Scene-UseCase2` - Assistive scene
 - `Scene-IsometryEnd` - End logo
 
+## Interactive Dot Editor
+
+A local web-based editor for visually editing dots in each scene.
+
+### Running the Editor
+
+```bash
+# Start the editor (bundles assets and starts server)
+npm run editor
+```
+
+Then open **http://localhost:3333** in your browser.
+
+### Features
+
+- **Visual editing** - See all dots in each scene on a canvas
+- **Scene switching** - Toggle between Logo, Brain, BCI, Clinical, Assistive
+- **Selection tools:**
+  - Click to select single dot
+  - Box select (M) for rectangular selection
+  - Lasso (L) for freeform selection
+  - Select all (⌘A)
+- **Editing:**
+  - Change color (presets + custom hex)
+  - Adjust size with slider
+  - Delete selected dots (Del/Backspace)
+  - Draw new dots (D)
+  - Erase dots (E)
+- **Navigation:**
+  - Pan (Space + drag)
+  - Zoom (scroll wheel or +/-)
+- **Export:**
+  - Copy asset code to clipboard
+  - Download as `.ts` file
+
+### Keyboard Shortcuts
+
+| Action | Key |
+|--------|-----|
+| Select tool | V |
+| Box select | M |
+| Lasso select | L |
+| Draw dot | D |
+| Erase | E |
+| Pan | Space + Drag |
+| Select all | ⌘/Ctrl + A |
+| Deselect | Esc |
+| Delete | Delete / Backspace |
+| Zoom in/out | Scroll / +/- |
+| Reset zoom | 0 |
+
+### Workflow
+
+1. Run editor, pick a scene
+2. Edit dots visually (add, remove, recolor, resize)
+3. Click "Copy Asset Code" to export
+4. Paste into `src/assets/[scene]Dots.ts`
+5. Re-render video to see changes
+
+---
+
 ## Web Integration
 
 For website use, you can:
