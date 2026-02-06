@@ -345,10 +345,10 @@ export const sampleClinicalAssetTargets = (): Point[] => {
   const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 1.25;
   const ox = WIDTH / 2 - (srcW * scale) / 2;
   const oy = HEIGHT / 2 - (srcH * scale) / 2 + 60; // shifted down
-  // Filter out border rectangle dots (left ~103-105, right ~1498-1500, top ~287-290, bottom ~984-988)
+  // Filter out border rectangle dots (left ~103-105, right ~1418/1498, top ~287-290, bottom ~984-988)
   const filtered = CLINICAL_DOTS_SOURCE.filter(([x, y]) => {
     const onLeftBorder = x < 130;
-    const onRightBorder = x > 1480;
+    const onRightBorder = x > 1400; // more aggressive filter for right edge
     const onTopBorder = y < 310;
     const onBottomBorder = y > 960;
     return !(onLeftBorder || onRightBorder || onTopBorder || onBottomBorder);
