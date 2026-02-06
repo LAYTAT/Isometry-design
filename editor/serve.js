@@ -8,7 +8,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 3001;
+const PORT = 3333;
 const ROOT = path.join(__dirname, '..');
 
 const MIME_TYPES = {
@@ -65,7 +65,7 @@ server.listen(PORT, () => {
 ╠════════════════════════════════════════════╣
 ║                                            ║
 ║   Open in browser:                         ║
-║   http://localhost:${PORT}                    ║
+║   http://localhost:${PORT}                   ║
 ║                                            ║
 ║   Press Ctrl+C to stop                     ║
 ╚════════════════════════════════════════════╝
