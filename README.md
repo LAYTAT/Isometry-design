@@ -246,14 +246,32 @@ npx remotion still src/index.ts Scene-BrainToComputer ./still.png --frame 0
 
 A local web-based editor for visually editing dots in each scene.
 
+### Syncing Assets
+
+The editor uses `editor/assets.json` which must stay in sync with `src/assets/*.ts` files.
+
+**One-time sync:**
+```bash
+npm run sync-assets
+```
+
+**Auto-sync while developing:**
+```bash
+npm run sync-assets:watch
+```
+
+This watches for changes in `src/assets/` and automatically updates `editor/assets.json`.
+
 ### Running the Editor
 
 ```bash
-# Start the editor (bundles assets and starts server)
+# Start the editor (syncs assets and starts server)
 npm run editor
 ```
 
 Then open **http://localhost:3333** in your browser.
+
+**Tip:** Run `npm run sync-assets:watch` in another terminal while editing to keep assets in sync in real-time.
 
 ### Features
 
@@ -295,11 +313,29 @@ Then open **http://localhost:3333** in your browser.
 
 ### Workflow
 
-1. Run editor, pick a scene
-2. Edit dots visually (add, remove, recolor, resize)
-3. Click "Copy Asset Code" to export
-4. Paste into `src/assets/[scene]Dots.ts`
-5. Re-render video to see changes
+1. **Start the watcher** (in one terminal):
+   ```bash
+   npm run sync-assets:watch
+   ```
+
+2. **Run the editor** (in another terminal):
+   ```bash
+   npm run editor
+   ```
+
+3. **Edit dots visually** in the browser at http://localhost:3333
+   - Add, remove, recolor, resize dots
+   - Changes auto-sync to `src/assets/[scene]Dots.ts`
+
+4. **Export and use:**
+   - Click "Copy Asset Code" to copy to clipboard
+   - Or download as `.ts` file
+   - Changes are already saved to `src/assets/`
+
+5. **Re-render video** to see changes:
+   ```bash
+   npm run render
+   ```
 
 ---
 
