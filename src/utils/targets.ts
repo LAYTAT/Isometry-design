@@ -303,7 +303,21 @@ export const sampleBrainToComputerAssetTargets = (): Point[] => {
   const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 1.05;
   const ox = WIDTH / 2 - (srcW * scale) / 2;
   const oy = HEIGHT / 2 - (srcH * scale) / 2;
-  const pts = BRAIN_TO_COMPUTER_DOTS_SOURCE.map(([x, y, r]) => ({
+  // Filter out border rectangle dots
+  const margin = 60;
+  const filtered = BRAIN_TO_COMPUTER_DOTS_SOURCE.filter(([x, y]) => {
+    const isLeftEdge = x < margin + 250;
+    const isRightEdge = x > srcW - margin - 250;
+    const isTopEdge = y < margin + 300;
+    const isBottomEdge = y > srcH - margin - 50;
+    // Keep only dots that are NOT on border edges OR are part of internal content
+    const onLeftBorder = x < 320 && (y < 340 || y > 700);
+    const onRightBorder = x > 1230 && (y < 340 || y > 700);
+    const onTopBorder = y < 350 && (x < 320 || x > 1230);
+    const onBottomBorder = y > 700 && (x < 320 || x > 1230);
+    return !(onLeftBorder || onRightBorder || onTopBorder || onBottomBorder);
+  });
+  const pts = filtered.map(([x, y, r]) => ({
     x: x * scale + ox,
     y: y * scale + oy,
     r: r * (scale * 0.85),
@@ -331,7 +345,15 @@ export const sampleClinicalAssetTargets = (): Point[] => {
   const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 1.25;
   const ox = WIDTH / 2 - (srcW * scale) / 2;
   const oy = HEIGHT / 2 - (srcH * scale) / 2 + 60; // shifted down
-  const pts = CLINICAL_DOTS_SOURCE.map(([x, y, r]) => ({
+  // Filter out border rectangle dots (left ~103-105, right ~1498-1500, top ~287-290, bottom ~984-988)
+  const filtered = CLINICAL_DOTS_SOURCE.filter(([x, y]) => {
+    const onLeftBorder = x < 130;
+    const onRightBorder = x > 1480;
+    const onTopBorder = y < 310;
+    const onBottomBorder = y > 960;
+    return !(onLeftBorder || onRightBorder || onTopBorder || onBottomBorder);
+  });
+  const pts = filtered.map(([x, y, r]) => ({
     x: x * scale + ox,
     y: y * scale + oy,
     r: r * (scale * 0.85),
@@ -344,8 +366,15 @@ export const sampleAssistiveAssetTargets = (): Point[] => {
   const srcH = 1237;
   const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 1.25;
   const ox = WIDTH / 2 - (srcW * scale) / 2;
-  const oy = HEIGHT / 2 - (srcH * scale) / 2 + 60; // shifted down
-  const pts = ASSISTIVE_DOTS_SOURCE.map(([x, y, r]) => ({
+  const oy = HEIGHT / 2 - (srcH * scale) / 2 + 120; // shifted down more
+  // Filter out border rectangle dots (left ~79-84, right ~1497-1498, top ~211-216)
+  const filtered = ASSISTIVE_DOTS_SOURCE.filter(([x, y]) => {
+    const onLeftBorder = x < 110;
+    const onRightBorder = x > 1480;
+    const onTopBorder = y < 240;
+    return !(onLeftBorder || onRightBorder || onTopBorder);
+  });
+  const pts = filtered.map(([x, y, r]) => ({
     x: x * scale + ox,
     y: y * scale + oy,
     r: r * (scale * 0.85),
