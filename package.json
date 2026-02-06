@@ -1,8 +1,11 @@
 {
   "name": "isometry-design",
   "version": "1.0.0",
-  "description": "My Remotion video",
-  "repository": {},
+  "description": "Particle-based animation system for Isometry brand visuals",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LAYTAT/Isometry-design.git"
+  },
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
@@ -17,13 +20,20 @@
     "@remotion/eslint-config-flat": "4.0.417",
     "@types/react": "19.2.7",
     "@types/web": "0.0.166",
+    "@types/node": "^20.0.0",
     "eslint": "9.19.0",
+    "jimp": "^0.22.12",
     "prettier": "3.6.0",
+    "ts-node": "^10.9.2",
     "typescript": "5.9.3"
   },
   "scripts": {
     "dev": "remotion studio",
     "build": "remotion bundle",
+    "render": "remotion render src/index.ts IsometryPromo ./out.mp4 --codec h264 --concurrency 5",
+    "render:preview": "remotion render src/index.ts IsometryPromo ./preview.mp4 --codec h264 --concurrency 5 --every-nth-frame 2",
+    "still": "remotion still src/index.ts Scene-BrainToComputer ./still.png --frame 0",
+    "generate-asset": "npx ts-node scripts/generate-asset.ts",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc"
   },

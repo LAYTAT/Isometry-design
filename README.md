@@ -1,54 +1,283 @@
-# Remotion video
+# Isometry Design
 
-<p align="center">
-  <a href="https://github.com/remotion-dev/logo">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-dark.apng">
-      <img alt="Animated Remotion Logo" src="https://github.com/remotion-dev/logo/raw/main/animated-logo-banner-light.gif">
-    </picture>
-  </a>
-</p>
+Particle-based animation system for Isometry brand visuals. Creates smooth morphing transitions between different dot-based illustrations.
 
-Welcome to your Remotion project!
+![Preview](./stills/Scene-BrainToComputer.png)
 
-## Commands
+## Quick Start
 
-**Install Dependencies**
+```bash
+# Install dependencies
+npm install
 
-```console
-npm i
-```
-
-**Start Preview**
-
-```console
+# Preview in browser
 npm run dev
+
+# Render video
+npm run render
+
+# Render specific composition
+npx remotion render src/index.ts IsometryPromo ./output.mp4 --codec h264
 ```
 
-**Render video**
+## Project Structure
 
-```console
-npx remotion render
+```
+isometry-design/
+├── src/
+│   ├── config.ts          # ⭐ Main configuration file
+│   ├── constants.ts       # Derived constants (auto-generated from config)
+│   ├── assets/            # Dot coordinate data
+│   │   ├── brainDots.ts
+│   │   ├── brainToComputerDots.ts  (BCI scene)
+│   │   ├── clinicalDots.ts
+│   │   └── assistiveDots.ts
+│   ├── scenes/
+│   │   ├── Main.tsx       # Main composition (scene orchestration)
+│   │   └── SceneSolo.tsx  # Individual scene renderer
+│   ├── utils/
+│   │   ├── targets.ts     # Point sampling functions
+│   │   ├── noise.ts       # Perlin noise for particle movement
+│   │   └── easings.ts     # Animation easing functions
+│   ├── Root.tsx           # Remotion root (composition registry)
+│   └── index.ts           # Entry point
+├── scripts/
+│   └── generate-asset.ts  # Asset generation tool
+├── stills/                # Preview images
+└── package.json
 ```
 
-**Upgrade Remotion**
+## Configuration
 
-```console
-npx remotion upgrade
+All tunable parameters are in **`src/config.ts`**:
+
+### Video Settings
+```typescript
+video: {
+  width: 1920,
+  height: 1080,
+  fps: 30,
+  backgroundColor: '#000000',
+}
 ```
 
-## Docs
+### Particle Settings
+```typescript
+particles: {
+  count: 2000,           // Total particles
+  defaultSize: 3,        // Dot radius
+  color: '#ffffff',      // Dot color
+  transitionEasing: 0.08 // Movement speed (0.01-0.15)
+}
+```
 
-Get started with Remotion by reading the [fundamentals page](https://www.remotion.dev/docs/the-fundamentals).
+### Timing (in frames @ 30fps)
+```typescript
+timing: {
+  STATE_A: 0,     // Logo hold start
+  STATE_B: 90,    // Logo → Brain (3s)
+  STATE_C: 180,   // Brain → BCI (3s)
+  STATE_D: 300,   // BCI → Clinical (4s)
+  STATE_E: 420,   // Clinical → Assistive (4s)
+  STATE_F: 540,   // Assistive → Logo (4s)
+  STATE_G: 660,   // Logo hold end
+  TOTAL_FRAMES: 765,
+}
+```
 
-## Help
+### Scene Configuration
+Each scene has its own config:
 
-We provide help on our [Discord server](https://discord.gg/6VzzNDwUwV).
+```typescript
+scenes: {
+  brain: {
+    scale: 0.85,        // Size multiplier
+    offsetX: 0,         // Horizontal shift
+    offsetY: 0,         // Vertical shift
+    dotScale: 0.9,      // Individual dot size
+    sourceWidth: 540,   // Original image width
+    sourceHeight: 395,  // Original image height
+  },
+  
+  clinical: {
+    scale: 1.25,
+    offsetX: 0,
+    offsetY: 60,        // Shifted down
+    dotScale: 0.85,
+    filterBorder: true, // Remove rectangular border
+    borderFilter: {
+      leftEdge: 130,    // Filter dots with x < 130
+      rightEdge: 1400,  // Filter dots with x > 1400
+      topEdge: 310,
+      bottomEdge: 960,
+      mode: 'edges',    // 'edges' or 'corners'
+    },
+  },
+  // ... more scenes
+}
+```
 
-## Issues
+## Adding New Scenes
 
-Found an issue with Remotion? [File an issue here](https://github.com/remotion-dev/remotion/issues/new).
+### 1. Generate Asset from Image
+
+Prepare your image:
+- Use **white dots on black background**
+- PNG format recommended
+- Resolution: 1000-2000px width works well
+
+Run the generator:
+```bash
+# Install jimp if not already installed
+npm install jimp
+
+# Generate asset
+npx ts-node scripts/generate-asset.ts ./my-image.png myScene
+
+# With options
+npx ts-node scripts/generate-asset.ts ./my-image.png myScene --threshold 180 --min-radius 2
+```
+
+This creates `src/assets/mySceneDots.ts`.
+
+### 2. Add Configuration
+
+In `src/config.ts`, add a new scene:
+```typescript
+scenes: {
+  // ... existing scenes
+  
+  myScene: {
+    scale: 1.0,
+    offsetX: 0,
+    offsetY: 0,
+    dotScale: 0.85,
+    filterBorder: false,
+    sourceWidth: 1536,  // From generated file header
+    sourceHeight: 1024,
+  },
+}
+```
+
+### 3. Create Sampler Function
+
+In `src/utils/targets.ts`:
+```typescript
+import { MY_SCENE_DOTS_SOURCE } from "../assets/mySceneDots";
+
+export const sampleMySceneTargets = (): Point[] => {
+  const cfg = CONFIG.scenes.myScene;
+  return transformAssetToScreen(MY_SCENE_DOTS_SOURCE, {
+    sourceWidth: cfg.sourceWidth,
+    sourceHeight: cfg.sourceHeight,
+    scale: cfg.scale,
+    offsetX: cfg.offsetX,
+    offsetY: cfg.offsetY,
+    dotScale: cfg.dotScale,
+    filterBorder: cfg.filterBorder,
+    borderFilter: cfg.borderFilter,
+  });
+};
+```
+
+### 4. Add to Main Composition
+
+In `src/scenes/Main.tsx`, add your scene to the state machine and import the sampler.
+
+## Asset Files
+
+Each asset file contains dot coordinates as `[x, y, radius]` tuples:
+
+```typescript
+export const BRAIN_DOTS_SOURCE: Array<[number, number, number]> = [
+  [270.5, 108.5, 2.3],   // x, y, radius
+  [285.2, 112.8, 1.9],
+  // ... more dots
+];
+```
+
+### Current Assets
+
+| Asset | Scene | Source Resolution | Dots |
+|-------|-------|-------------------|------|
+| `brainDots.ts` | Brain | 540 × 395 | ~200 |
+| `brainToComputerDots.ts` | BCI | 1536 × 1049 | ~500 |
+| `clinicalDots.ts` | Clinical | 1536 × 1272 | ~1200 |
+| `assistiveDots.ts` | Assistive | 1536 × 1237 | ~1100 |
+
+## Rendering
+
+### Development Preview
+```bash
+npm run dev
+# Opens http://localhost:3000
+```
+
+### Render Video
+```bash
+# Default render
+npm run render
+
+# Custom output
+npx remotion render src/index.ts IsometryPromo ./my-video.mp4 --codec h264
+
+# Higher quality (slower)
+npx remotion render src/index.ts IsometryPromo ./output.mp4 --codec h264 --crf 18
+
+# Lower concurrency (if memory issues)
+npx remotion render src/index.ts IsometryPromo ./output.mp4 --concurrency 2
+```
+
+### Render Single Frame (Still)
+```bash
+npx remotion still src/index.ts Scene-BrainToComputer ./still.png --frame 0
+```
+
+### Available Compositions
+- `IsometryPromo` - Full animation sequence
+- `Scene-IsometryHold` - Logo only
+- `Scene-Brain` - Brain scene
+- `Scene-BrainToComputer` - BCI scene
+- `Scene-UseCase1` - Clinical scene
+- `Scene-UseCase2` - Assistive scene
+- `Scene-IsometryEnd` - End logo
+
+## Web Integration
+
+For website use, you can:
+
+1. **Export as video** and use HTML5 `<video>` tag
+2. **Export frame sequence** for custom JS animation
+3. **Use the particle system directly** - the core logic in `targets.ts` and `utils/` can be extracted for canvas/WebGL rendering
+
+### Extracting for Web
+
+The key files for web integration:
+- `src/utils/targets.ts` - Point sampling functions
+- `src/assets/*.ts` - Dot coordinate data
+- `src/config.ts` - Configuration
+
+These can be used with any canvas/WebGL framework (Three.js, p5.js, etc.).
+
+## Tips
+
+### Smooth Transitions
+- Ensure similar dot counts between scenes
+- `padPoints()` automatically fills gaps with nearby duplicates
+- Lower `transitionEasing` = smoother but slower
+
+### Performance
+- Reduce `particles.count` for faster preview
+- Use `--concurrency 2-4` for rendering on limited RAM
+- Asset files are just data - rendering is the slow part
+
+### Border Filtering
+If your source image has a dotted border/frame:
+- Set `filterBorder: true`
+- Adjust edge thresholds until border disappears
+- Use `mode: 'edges'` for full edge removal
+- Use `mode: 'corners'` for partial removal (like BCI scene)
 
 ## License
 
-Note that for some entities a company license is needed. [Read the terms here](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md).
+Private - Isometry internal use only.
