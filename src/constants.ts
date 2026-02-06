@@ -1,5 +1,5 @@
 export const FPS = 30;
-export const DURATION_IN_FRAMES = 450;
+export const DURATION_IN_FRAMES = 765;
 export const WIDTH = 1920;
 export const HEIGHT = 1080;
 
@@ -16,10 +16,15 @@ export const LAYERS = [
   { z: 1.3, opacity: 0.9 },
 ];
 
-export const STATE_A: [number, number] = [0, 60];   // ISOMETRY hold
-export const STATE_B: [number, number] = [60, 120]; // ISOMETRY -> brain
-export const STATE_C: [number, number] = [120, 180]; // brain -> brain-to-computer frame
-export const STATE_D: [number, number] = [180, 240]; // brain-to-computer -> computer
-export const STATE_E: [number, number] = [240, 300]; // computer -> use case 1
-export const STATE_F: [number, number] = [300, 360]; // use case 1 -> use case 2
-export const STATE_G: [number, number] = [360, 450]; // use case 2 -> ISOMETRY
+// Fast transitions (45 frames = 1.5s) + holds (90 frames = 3s)
+export const STATE_A: [number, number] = [0, 90];       // logo hold (3s)
+export const STATE_B: [number, number] = [90, 135];     // logo -> brain (1.5s)
+export const STATE_B_HOLD: [number, number] = [135, 225]; // brain hold (3s)
+export const STATE_C: [number, number] = [225, 270];    // brain -> bci (1.5s)
+export const STATE_C_HOLD: [number, number] = [270, 360]; // bci hold (3s)
+export const STATE_D: [number, number] = [360, 405];    // bci -> clinical (1.5s)
+export const STATE_D_HOLD: [number, number] = [405, 495]; // clinical hold (3s)
+export const STATE_E: [number, number] = [495, 540];    // clinical -> assistive (1.5s)
+export const STATE_E_HOLD: [number, number] = [540, 630]; // assistive hold (3s)
+export const STATE_F: [number, number] = [630, 675];    // assistive -> logo (1.5s)
+export const STATE_G: [number, number] = [675, 765];    // logo hold (3s)

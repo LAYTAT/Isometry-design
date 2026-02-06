@@ -5,13 +5,12 @@ import { Camera } from "../components/Camera";
 import { PostFX } from "../components/PostFX";
 import { clamp, remap, easeInOut } from "../utils/easings";
 import {
-  sampleBrainTargets,
-  sampleComputerTargets,
   sampleLogoTargets,
   sampleCoreTargets,
   sampleBrainToComputerAssetTargets,
-  sampleRoundedRectTargets,
-  sampleCircleTargets,
+  sampleBrainAssetTargets,
+  sampleClinicalAssetTargets,
+  sampleAssistiveAssetTargets,
   matchBySort,
 } from "../utils/targets";
 
@@ -19,7 +18,6 @@ export type SceneKind =
   | "isometry-hold"
   | "brain"
   | "brain-to-computer"
-  | "computer"
   | "usecase-1"
   | "usecase-2"
   | "isometry-end";
@@ -30,18 +28,17 @@ export const SceneSolo: React.FC<{ kind: SceneKind }> = ({ kind }) => {
 
   const targets = useMemo(() => {
     const core = sampleCoreTargets();
-    const brain = sampleBrainTargets();
+    const brain = sampleBrainAssetTargets();
     const bci = sampleBrainToComputerAssetTargets();
-    const computer = sampleComputerTargets();
-    const use1 = sampleRoundedRectTargets(520, 300, 50);
-    const use2 = sampleCircleTargets(180);
+    const clinical = sampleClinicalAssetTargets();
+    const assistive = sampleAssistiveAssetTargets();
     const logoRaw = sampleLogoTargets();
     const logo = matchBySort(core, logoRaw);
-    return { core, brain, bci, computer, use1, use2, logo };
+    return { core, brain, bci, clinical, assistive, logo };
   }, []);
 
   let seg;
-  const t = clamp(remap(frame, 0, durationInFrames - 1));
+  // const t = clamp(remap(frame, 0, durationInFrames - 1)); // reserved for transitions
   switch (kind) {
     case "isometry-hold":
       seg = { from: targets.logo, to: targets.logo, t: 1, mode: "logo" as const };
@@ -52,14 +49,11 @@ export const SceneSolo: React.FC<{ kind: SceneKind }> = ({ kind }) => {
     case "brain-to-computer":
       seg = { from: targets.bci, to: targets.bci, t: 1, mode: "morph" as const };
       break;
-    case "computer":
-      seg = { from: targets.computer, to: targets.computer, t: 1, mode: "morph" as const };
-      break;
     case "usecase-1":
-      seg = { from: targets.use1, to: targets.use1, t: 1, mode: "morph" as const };
+      seg = { from: targets.clinical, to: targets.clinical, t: 1, mode: "morph" as const };
       break;
     case "usecase-2":
-      seg = { from: targets.use2, to: targets.use2, t: 1, mode: "morph" as const };
+      seg = { from: targets.assistive, to: targets.assistive, t: 1, mode: "morph" as const };
       break;
     case "isometry-end":
       seg = { from: targets.logo, to: targets.logo, t: 1, mode: "logo" as const };

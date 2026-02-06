@@ -1,6 +1,9 @@
 import { DOT_SIZE, HEIGHT, WIDTH, N_DOTS } from "../constants";
 import { noise2 } from "./noise";
 import { BRAIN_TO_COMPUTER_DOTS_SOURCE } from "../assets/brainToComputerDots";
+import { BRAIN_DOTS_SOURCE } from "../assets/brainDots";
+import { CLINICAL_DOTS_SOURCE } from "../assets/clinicalDots";
+import { ASSISTIVE_DOTS_SOURCE } from "../assets/assistiveDots";
 
 export type Point = { x: number; y: number; r: number };
 
@@ -297,10 +300,52 @@ export const sampleBCIWindowTargets = (): Point[] => {
 export const sampleBrainToComputerAssetTargets = (): Point[] => {
   const srcW = 1536;
   const srcH = 1049;
-  const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 0.9;
+  const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 1.05;
   const ox = WIDTH / 2 - (srcW * scale) / 2;
   const oy = HEIGHT / 2 - (srcH * scale) / 2;
   const pts = BRAIN_TO_COMPUTER_DOTS_SOURCE.map(([x, y, r]) => ({
+    x: x * scale + ox,
+    y: y * scale + oy,
+    r: r * (scale * 0.85),
+  }));
+  return padPoints(pts);
+};
+
+export const sampleBrainAssetTargets = (): Point[] => {
+  const srcW = 540;
+  const srcH = 395;
+  const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 0.85;
+  const ox = WIDTH / 2 - (srcW * scale) / 2;
+  const oy = HEIGHT / 2 - (srcH * scale) / 2;
+  const pts = BRAIN_DOTS_SOURCE.map(([x, y, r]) => ({
+    x: x * scale + ox,
+    y: y * scale + oy,
+    r: r * (scale * 0.9),
+  }));
+  return padPoints(pts);
+};
+
+export const sampleClinicalAssetTargets = (): Point[] => {
+  const srcW = 1536;
+  const srcH = 1272;
+  const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 1.25;
+  const ox = WIDTH / 2 - (srcW * scale) / 2;
+  const oy = HEIGHT / 2 - (srcH * scale) / 2 + 60; // shifted down
+  const pts = CLINICAL_DOTS_SOURCE.map(([x, y, r]) => ({
+    x: x * scale + ox,
+    y: y * scale + oy,
+    r: r * (scale * 0.85),
+  }));
+  return padPoints(pts);
+};
+
+export const sampleAssistiveAssetTargets = (): Point[] => {
+  const srcW = 1536;
+  const srcH = 1237;
+  const scale = Math.min(WIDTH / srcW, HEIGHT / srcH) * 1.25;
+  const ox = WIDTH / 2 - (srcW * scale) / 2;
+  const oy = HEIGHT / 2 - (srcH * scale) / 2 + 60; // shifted down
+  const pts = ASSISTIVE_DOTS_SOURCE.map(([x, y, r]) => ({
     x: x * scale + ox,
     y: y * scale + oy,
     r: r * (scale * 0.85),

@@ -40,14 +40,6 @@ export const RemotionRoot: React.FC = () => {
         height={HEIGHT}
       />
       <Composition
-        id="Scene-Computer"
-        component={() => <SceneSolo kind="computer" />}
-        durationInFrames={90}
-        fps={FPS}
-        width={WIDTH}
-        height={HEIGHT}
-      />
-      <Composition
         id="Scene-UseCase1"
         component={() => <SceneSolo kind="usecase-1" />}
         durationInFrames={90}
