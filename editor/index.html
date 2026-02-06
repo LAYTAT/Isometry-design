@@ -11,106 +11,102 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #1a1a2e;
       color: #eee;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
     }
     
-    .container {
+    .app {
       display: flex;
       height: 100vh;
     }
     
-    /* Preview Panel */
-    .preview-panel {
-      flex: 1;
+    /* Toolbar */
+    .toolbar {
+      width: 56px;
+      background: #0f0f1a;
+      border-right: 1px solid #2a2a4a;
       display: flex;
       flex-direction: column;
-      background: #000;
+      padding: 8px;
+      gap: 4px;
     }
     
-    .preview-header {
-      padding: 12px 20px;
-      background: #16213e;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #0f3460;
-    }
-    
-    .preview-header h2 {
-      font-size: 14px;
-      font-weight: 500;
-      color: #94a3b8;
-    }
-    
-    .scene-selector {
-      display: flex;
-      gap: 8px;
-    }
-    
-    .scene-btn {
-      padding: 6px 12px;
-      background: #0f3460;
+    .tool-btn {
+      width: 40px;
+      height: 40px;
       border: none;
-      border-radius: 4px;
-      color: #94a3b8;
+      border-radius: 8px;
+      background: transparent;
+      color: #888;
+      font-size: 18px;
       cursor: pointer;
-      font-size: 12px;
-      transition: all 0.2s;
-    }
-    
-    .scene-btn:hover { background: #1a4a7a; }
-    .scene-btn.active { background: #e94560; color: white; }
-    
-    #canvas-container {
-      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      transition: all 0.15s;
     }
     
-    #preview-canvas {
-      max-width: 100%;
-      max-height: 100%;
+    .tool-btn:hover { background: #2a2a4a; color: #fff; }
+    .tool-btn.active { background: #e94560; color: #fff; }
+    
+    .tool-divider {
+      height: 1px;
+      background: #2a2a4a;
+      margin: 8px 0;
+    }
+    
+    /* Canvas Area */
+    .canvas-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
       background: #000;
-      border-radius: 8px;
-      box-shadow: 0 0 40px rgba(233, 69, 96, 0.2);
     }
     
-    /* Control Panel */
-    .control-panel {
-      width: 360px;
+    #main-canvas {
+      position: absolute;
+      cursor: crosshair;
+    }
+    
+    #selection-canvas {
+      position: absolute;
+      pointer-events: none;
+    }
+    
+    /* Panel */
+    .panel {
+      width: 280px;
       background: #16213e;
-      overflow-y: auto;
-      border-left: 1px solid #0f3460;
+      border-left: 1px solid #2a2a4a;
+      display: flex;
+      flex-direction: column;
     }
     
     .panel-header {
-      padding: 16px 20px;
+      padding: 16px;
       background: #0f3460;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      border-bottom: 1px solid #2a2a4a;
     }
     
-    .panel-header h1 {
-      font-size: 18px;
+    .panel-header h2 {
+      font-size: 14px;
       font-weight: 600;
-      margin-bottom: 4px;
     }
     
     .panel-header p {
-      font-size: 12px;
-      color: #94a3b8;
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
     }
     
-    .section {
-      padding: 16px 20px;
-      border-bottom: 1px solid #0f3460;
+    .panel-section {
+      padding: 16px;
+      border-bottom: 1px solid #2a2a4a;
     }
     
     .section-title {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -118,162 +114,303 @@
       margin-bottom: 12px;
     }
     
-    .control-group {
-      margin-bottom: 16px;
+    /* Scene Selector */
+    .scene-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
     }
     
-    .control-group:last-child {
-      margin-bottom: 0;
+    .scene-btn {
+      padding: 10px 8px;
+      background: #0f3460;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      color: #888;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
     }
     
-    .control-label {
+    .scene-btn:hover { background: #1a4a7a; color: #fff; }
+    .scene-btn.active { border-color: #e94560; color: #fff; background: #1a4a7a; }
+    
+    /* Color Picker */
+    .color-section {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .color-presets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .color-preset {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    
+    .color-preset:hover { transform: scale(1.1); }
+    .color-preset.active { border-color: #fff; }
+    
+    .color-custom {
+      display: flex;
       align-items: center;
-      margin-bottom: 6px;
+      gap: 8px;
     }
     
-    .control-label span {
+    .color-custom input[type="color"] {
+      width: 40px;
+      height: 32px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: transparent;
+    }
+    
+    .color-custom input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      background: #0f3460;
+      border: 1px solid #2a2a4a;
+      border-radius: 4px;
+      color: #fff;
+      font-family: monospace;
       font-size: 12px;
-      color: #94a3b8;
     }
     
-    .control-value {
-      font-size: 12px;
-      color: #e94560;
-      font-family: 'Monaco', 'Menlo', monospace;
+    /* Size Slider */
+    .size-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
     
-    input[type="range"] {
-      width: 100%;
-      height: 6px;
+    .size-control input[type="range"] {
+      flex: 1;
+      height: 4px;
       -webkit-appearance: none;
       background: #0f3460;
-      border-radius: 3px;
-      outline: none;
+      border-radius: 2px;
     }
     
-    input[type="range"]::-webkit-slider-thumb {
+    .size-control input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       background: #e94560;
       border-radius: 50%;
       cursor: pointer;
-      transition: transform 0.1s;
     }
     
-    input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
-    }
-    
-    input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: #e94560;
-    }
-    
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .checkbox-row label {
+    .size-value {
       font-size: 12px;
-      color: #94a3b8;
+      color: #e94560;
+      font-family: monospace;
+      min-width: 32px;
     }
     
-    /* Buttons */
-    .btn {
+    /* Actions */
+    .action-btn {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       border: none;
       border-radius: 6px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s;
       margin-top: 8px;
     }
     
-    .btn-primary {
-      background: #e94560;
-      color: white;
-    }
+    .action-btn:first-child { margin-top: 0; }
     
-    .btn-primary:hover {
-      background: #ff6b6b;
-    }
+    .action-btn.primary { background: #e94560; color: #fff; }
+    .action-btn.primary:hover { background: #ff6b8a; }
     
-    .btn-secondary {
+    .action-btn.secondary { background: #0f3460; color: #888; }
+    .action-btn.secondary:hover { background: #1a4a7a; color: #fff; }
+    
+    .action-btn.danger { background: #4a1a2e; color: #e94560; }
+    .action-btn.danger:hover { background: #6a2a4e; }
+    
+    /* Selection Info */
+    .selection-info {
       background: #0f3460;
-      color: #94a3b8;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 12px;
     }
     
-    .btn-secondary:hover {
-      background: #1a4a7a;
-      color: white;
+    .selection-info .count {
+      font-size: 24px;
+      font-weight: 600;
+      color: #e94560;
     }
     
-    /* Playback Controls */
-    .playback-controls {
+    .selection-info .label {
+      color: #888;
+      margin-top: 4px;
+    }
+    
+    /* Status Bar */
+    .status-bar {
+      padding: 8px 16px;
+      background: #0f0f1a;
+      border-top: 1px solid #2a2a4a;
+      font-size: 11px;
+      color: #666;
       display: flex;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    
-    .playback-controls .btn {
-      flex: 1;
-      margin-top: 0;
+      justify-content: space-between;
     }
     
     /* Toast */
     .toast {
       position: fixed;
-      bottom: 20px;
+      bottom: 60px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(-50%) translateY(20px);
       background: #0f3460;
-      color: white;
+      color: #fff;
       padding: 12px 24px;
       border-radius: 8px;
       font-size: 13px;
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: all 0.3s;
       z-index: 1000;
+      pointer-events: none;
     }
     
-    .toast.show {
-      opacity: 1;
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    
+    /* Keyboard Shortcuts Modal */
+    .shortcuts-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
     }
     
-    /* Timeline */
-    .timeline {
-      padding: 12px 20px;
-      background: #0f3460;
+    .shortcuts-overlay.show { display: flex; }
+    
+    .shortcuts-modal {
+      background: #16213e;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
     }
     
-    .timeline-label {
+    .shortcuts-modal h3 {
+      margin-bottom: 16px;
+    }
+    
+    .shortcut-row {
       display: flex;
       justify-content: space-between;
-      font-size: 11px;
-      color: #94a3b8;
-      margin-bottom: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid #2a2a4a;
     }
     
-    #timeline-slider {
-      width: 100%;
+    .shortcut-row:last-child { border: none; }
+    
+    .shortcut-key {
+      background: #0f3460;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    
+    /* Zoom indicator */
+    .zoom-indicator {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(0,0,0,0.7);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #888;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Preview Panel -->
-    <div class="preview-panel">
-      <div class="preview-header">
-        <h2>Preview</h2>
-        <div class="scene-selector">
+  <div class="app">
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="tool-btn active" data-tool="select" title="Select (V)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="box-select" title="Box Select (M)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="lasso" title="Lasso Select (L)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.85 0 3.58-.5 5.07-1.37"/>
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M22 12c0-1.85-.5-3.58-1.37-5.07"/>
+        </svg>
+      </button>
+      
+      <div class="tool-divider"></div>
+      
+      <button class="tool-btn" data-tool="draw" title="Draw Dot (D)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          <path d="M12 2v4m0 12v4m10-10h-4M6 12H2"/>
+        </svg>
+      </button>
+      <button class="tool-btn" data-tool="erase" title="Erase (E)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 20H9L4 15l10-10 7 7-5 8h4z"/>
+        </svg>
+      </button>
+      
+      <div class="tool-divider"></div>
+      
+      <button class="tool-btn" data-tool="pan" title="Pan (Space+Drag)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v20M2 12h20M7 7l5-5 5 5M7 17l5 5 5-5M17 7l5 5-5 5M7 7L2 12l5 5"/>
+        </svg>
+      </button>
+      
+      <div style="flex:1"></div>
+      
+      <button class="tool-btn" id="shortcuts-btn" title="Shortcuts (?)">?</button>
+    </div>
+    
+    <!-- Canvas Area -->
+    <div class="canvas-area" id="canvas-area">
+      <canvas id="main-canvas"></canvas>
+      <canvas id="selection-canvas"></canvas>
+      <div class="zoom-indicator" id="zoom-indicator">100%</div>
+    </div>
+    
+    <!-- Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Dot Editor</h2>
+        <p>Select dots and edit properties</p>
+      </div>
+      
+      <!-- Scene Selector -->
+      <div class="panel-section">
+        <div class="section-title">Scene</div>
+        <div class="scene-grid">
           <button class="scene-btn active" data-scene="logo">Logo</button>
           <button class="scene-btn" data-scene="brain">Brain</button>
           <button class="scene-btn" data-scene="bci">BCI</button>
@@ -282,67 +419,93 @@
         </div>
       </div>
       
-      <div class="timeline">
-        <div class="timeline-label">
-          <span>Frame: <span id="frame-display">0</span></span>
-          <span id="time-display">0:00</span>
+      <!-- Selection Info -->
+      <div class="panel-section">
+        <div class="section-title">Selection</div>
+        <div class="selection-info">
+          <div class="count" id="selection-count">0</div>
+          <div class="label">dots selected</div>
         </div>
-        <input type="range" id="timeline-slider" min="0" max="764" value="0">
       </div>
       
-      <div id="canvas-container">
-        <canvas id="preview-canvas" width="1920" height="1080"></canvas>
-      </div>
-    </div>
-    
-    <!-- Control Panel -->
-    <div class="control-panel">
-      <div class="panel-header">
-        <h1>Isometry Editor</h1>
-        <p>Adjust parameters and see changes live</p>
-      </div>
-      
-      <!-- Scene Controls (dynamic) -->
-      <div id="scene-controls"></div>
-      
-      <!-- Global Controls -->
-      <div class="section">
-        <div class="section-title">Particles</div>
-        
-        <div class="control-group">
-          <div class="control-label">
-            <span>Dot Size</span>
-            <span class="control-value" id="dotSize-value">3</span>
+      <!-- Color -->
+      <div class="panel-section">
+        <div class="section-title">Color</div>
+        <div class="color-section">
+          <div class="color-presets" id="color-presets">
+            <div class="color-preset active" data-color="#ffffff" style="background:#ffffff"></div>
+            <div class="color-preset" data-color="#e94560" style="background:#e94560"></div>
+            <div class="color-preset" data-color="#00d9ff" style="background:#00d9ff"></div>
+            <div class="color-preset" data-color="#00ff88" style="background:#00ff88"></div>
+            <div class="color-preset" data-color="#ffcc00" style="background:#ffcc00"></div>
+            <div class="color-preset" data-color="#ff6b6b" style="background:#ff6b6b"></div>
+            <div class="color-preset" data-color="#a855f7" style="background:#a855f7"></div>
+            <div class="color-preset" data-color="#888888" style="background:#888888"></div>
           </div>
-          <input type="range" id="dotSize" min="1" max="10" step="0.5" value="3">
+          <div class="color-custom">
+            <input type="color" id="color-picker" value="#ffffff">
+            <input type="text" id="color-hex" value="#ffffff" placeholder="#ffffff">
+          </div>
         </div>
-        
-        <div class="control-group">
-          <div class="control-label">
-            <span>Dot Opacity</span>
-            <span class="control-value" id="dotOpacity-value">0.85</span>
-          </div>
-          <input type="range" id="dotOpacity" min="0.1" max="1" step="0.05" value="0.85">
+      </div>
+      
+      <!-- Size -->
+      <div class="panel-section">
+        <div class="section-title">Size</div>
+        <div class="size-control">
+          <input type="range" id="size-slider" min="1" max="20" step="0.5" value="3">
+          <span class="size-value" id="size-value">3</span>
         </div>
       </div>
       
       <!-- Actions -->
-      <div class="section">
+      <div class="panel-section">
         <div class="section-title">Actions</div>
-        
-        <div class="playback-controls">
-          <button class="btn btn-secondary" id="play-btn">▶ Play</button>
-          <button class="btn btn-secondary" id="reset-btn">↺ Reset</button>
-        </div>
-        
-        <button class="btn btn-primary" id="export-btn">📋 Copy Config</button>
-        <button class="btn btn-secondary" id="download-btn">💾 Download config.ts</button>
+        <button class="action-btn secondary" id="select-all-btn">Select All (⌘A)</button>
+        <button class="action-btn secondary" id="deselect-btn">Deselect (Esc)</button>
+        <button class="action-btn secondary" id="invert-btn">Invert Selection</button>
+        <button class="action-btn danger" id="delete-btn">Delete Selected (Del)</button>
+      </div>
+      
+      <!-- Export -->
+      <div class="panel-section">
+        <div class="section-title">Export</div>
+        <button class="action-btn primary" id="export-btn">📋 Copy Asset Code</button>
+        <button class="action-btn secondary" id="download-btn">💾 Download Asset</button>
+      </div>
+      
+      <div style="flex:1"></div>
+      
+      <!-- Status -->
+      <div class="status-bar">
+        <span id="status-dots">0 dots</span>
+        <span id="status-pos">x: 0, y: 0</span>
       </div>
     </div>
   </div>
   
+  <!-- Toast -->
   <div class="toast" id="toast"></div>
   
-  <script type="module" src="editor.js"></script>
+  <!-- Shortcuts Modal -->
+  <div class="shortcuts-overlay" id="shortcuts-overlay">
+    <div class="shortcuts-modal">
+      <h3>Keyboard Shortcuts</h3>
+      <div class="shortcut-row"><span>Select tool</span><span class="shortcut-key">V</span></div>
+      <div class="shortcut-row"><span>Box select</span><span class="shortcut-key">M</span></div>
+      <div class="shortcut-row"><span>Lasso select</span><span class="shortcut-key">L</span></div>
+      <div class="shortcut-row"><span>Draw dot</span><span class="shortcut-key">D</span></div>
+      <div class="shortcut-row"><span>Erase</span><span class="shortcut-key">E</span></div>
+      <div class="shortcut-row"><span>Pan</span><span class="shortcut-key">Space + Drag</span></div>
+      <div class="shortcut-row"><span>Select all</span><span class="shortcut-key">⌘/Ctrl + A</span></div>
+      <div class="shortcut-row"><span>Deselect</span><span class="shortcut-key">Esc</span></div>
+      <div class="shortcut-row"><span>Delete</span><span class="shortcut-key">Delete / Backspace</span></div>
+      <div class="shortcut-row"><span>Zoom in/out</span><span class="shortcut-key">Scroll / +/-</span></div>
+      <div class="shortcut-row"><span>Reset zoom</span><span class="shortcut-key">0</span></div>
+      <button class="action-btn secondary" style="margin-top:16px" onclick="document.getElementById('shortcuts-overlay').classList.remove('show')">Close</button>
+    </div>
+  </div>
+  
+  <script src="editor.js"></script>
 </body>
 </html>

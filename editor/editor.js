@@ -1,198 +1,79 @@
 /**
- * Isometry Dot Editor
- * Interactive editor for tuning dot animation parameters
+ * Isometry Dot Editor - Full Interactive Editor
+ * Select, edit colors, add/remove dots
  */
-
-// ===================
-// ASSET DATA (imported from project)
-// ===================
-
-// These will be loaded from the asset files
-let ASSETS = {};
-
-// ===================
-// DEFAULT CONFIG
-// ===================
-
-const CONFIG = {
-  video: {
-    width: 1920,
-    height: 1080,
-    fps: 30,
-    backgroundColor: '#000000',
-  },
-  particles: {
-    count: 2000,
-    defaultSize: 3,
-    color: '#ffffff',
-    dotOpacity: 0.85,
-  },
-  scenes: {
-    logo: {
-      dotSize: 9,
-      gap: 4,
-      verticalOffset: 20,
-    },
-    brain: {
-      scale: 0.85,
-      offsetX: 0,
-      offsetY: 0,
-      dotScale: 0.9,
-      sourceWidth: 540,
-      sourceHeight: 395,
-    },
-    bci: {
-      scale: 1.05,
-      offsetX: 0,
-      offsetY: 0,
-      dotScale: 0.85,
-      filterBorder: true,
-      borderLeft: 320,
-      borderRight: 1230,
-      borderTop: 340,
-      borderBottom: 700,
-      sourceWidth: 1536,
-      sourceHeight: 1049,
-    },
-    clinical: {
-      scale: 1.25,
-      offsetX: 0,
-      offsetY: 60,
-      dotScale: 0.85,
-      filterBorder: true,
-      borderLeft: 130,
-      borderRight: 1400,
-      borderTop: 310,
-      borderBottom: 960,
-      sourceWidth: 1536,
-      sourceHeight: 1272,
-    },
-    assistive: {
-      scale: 1.25,
-      offsetX: 0,
-      offsetY: 120,
-      dotScale: 0.85,
-      filterBorder: true,
-      borderLeft: 110,
-      borderRight: 1480,
-      borderTop: 240,
-      borderBottom: 9999,
-      sourceWidth: 1536,
-      sourceHeight: 1237,
-    },
-  },
-};
 
 // ===================
 // STATE
 // ===================
 
+let dots = []; // Array of { x, y, r, color, selected }
 let currentScene = 'logo';
-let currentFrame = 0;
-let isPlaying = false;
-let animationId = null;
+let currentTool = 'select';
+let currentColor = '#ffffff';
+let currentSize = 3;
+
+// Canvas state
+let zoom = 1;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let selectionBox = null;
+let lassoPoints = [];
+let isPanning = false;
+let spacePressed = false;
+
+// Source dimensions
+const WIDTH = 1920;
+const HEIGHT = 1080;
+
+// Assets
+let ASSETS = {};
 
 // ===================
 // CANVAS SETUP
 // ===================
 
-const canvas = document.getElementById('preview-canvas');
-const ctx = canvas.getContext('2d');
-const WIDTH = CONFIG.video.width;
-const HEIGHT = CONFIG.video.height;
+const canvasArea = document.getElementById('canvas-area');
+const mainCanvas = document.getElementById('main-canvas');
+const selCanvas = document.getElementById('selection-canvas');
+const mainCtx = mainCanvas.getContext('2d');
+const selCtx = selCanvas.getContext('2d');
 
-// Scale canvas for display
-function resizeCanvas() {
-  const container = document.getElementById('canvas-container');
-  const containerRect = container.getBoundingClientRect();
-  const aspectRatio = WIDTH / HEIGHT;
-  
-  let displayWidth = containerRect.width - 40;
-  let displayHeight = displayWidth / aspectRatio;
-  
-  if (displayHeight > containerRect.height - 40) {
-    displayHeight = containerRect.height - 40;
-    displayWidth = displayHeight * aspectRatio;
-  }
-  
-  canvas.style.width = displayWidth + 'px';
-  canvas.style.height = displayHeight + 'px';
+function resizeCanvases() {
+  const rect = canvasArea.getBoundingClientRect();
+  mainCanvas.width = rect.width;
+  mainCanvas.height = rect.height;
+  selCanvas.width = rect.width;
+  selCanvas.height = rect.height;
+  render();
 }
 
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+window.addEventListener('resize', resizeCanvases);
 
 // ===================
-// LOGO GENERATION
+// COORDINATE TRANSFORMS
 // ===================
 
-const FONT = {
-  I: ["111", "010", "010", "010", "111"],
-  S: ["1111", "1000", "1110", "0001", "1110"],
-  O: ["1111", "1001", "1001", "1001", "1111"],
-  M: ["10001", "11011", "10101", "10001", "10001"],
-  E: ["1111", "1000", "1110", "1000", "1111"],
-  T: ["11111", "00100", "00100", "00100", "00100"],
-  R: ["1110", "1001", "1110", "1010", "1001"],
-  Y: ["10001", "01010", "00100", "00100", "00100"],
-};
-
-function generateLogoPoints() {
-  const cfg = CONFIG.scenes.logo;
-  const text = "ISOMETRY";
-  const rows = 5;
-  const chars = text.split("");
-  const colsPerChar = chars.map(c => FONT[c] ? FONT[c][0].length : 0);
-  const totalCols = colsPerChar.reduce((a, b) => a + b, 0) + (chars.length - 1);
-  const startX = WIDTH / 2 - (totalCols * (cfg.dotSize + cfg.gap)) / 2;
-  const startY = HEIGHT / 2 - (rows * (cfg.dotSize + cfg.gap)) / 2 + cfg.verticalOffset;
-  
-  const pts = [];
-  let cursor = 0;
-  chars.forEach(ch => {
-    const glyph = FONT[ch];
-    if (!glyph) return;
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < glyph[r].length; c++) {
-        if (glyph[r][c] === '1') {
-          pts.push({
-            x: startX + (cursor + c) * (cfg.dotSize + cfg.gap),
-            y: startY + r * (cfg.dotSize + cfg.gap),
-            r: cfg.dotSize / 2
-          });
-        }
-      }
-    }
-    cursor += glyph[0].length + 1;
-  });
-  return pts;
+function screenToWorld(sx, sy) {
+  const rect = mainCanvas.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  return {
+    x: (sx - cx - panX) / zoom + WIDTH / 2,
+    y: (sy - cy - panY) / zoom + HEIGHT / 2
+  };
 }
 
-// ===================
-// ASSET TRANSFORMATION
-// ===================
-
-function transformAsset(source, sceneName) {
-  const cfg = CONFIG.scenes[sceneName];
-  if (!cfg || !source) return [];
-  
-  const fitScale = Math.min(WIDTH / cfg.sourceWidth, HEIGHT / cfg.sourceHeight) * cfg.scale;
-  const ox = WIDTH / 2 - (cfg.sourceWidth * fitScale) / 2 + cfg.offsetX;
-  const oy = HEIGHT / 2 - (cfg.sourceHeight * fitScale) / 2 + cfg.offsetY;
-  
-  let filtered = source;
-  if (cfg.filterBorder) {
-    filtered = source.filter(([x, y]) => {
-      return x >= cfg.borderLeft && x <= cfg.borderRight && 
-             y >= cfg.borderTop && y <= cfg.borderBottom;
-    });
-  }
-  
-  return filtered.map(([x, y, r]) => ({
-    x: x * fitScale + ox,
-    y: y * fitScale + oy,
-    r: r * fitScale * cfg.dotScale
-  }));
+function worldToScreen(wx, wy) {
+  const rect = mainCanvas.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  return {
+    x: (wx - WIDTH / 2) * zoom + cx + panX,
+    y: (wy - HEIGHT / 2) * zoom + cy + panY
+  };
 }
 
 // ===================
@@ -200,374 +81,483 @@ function transformAsset(source, sceneName) {
 // ===================
 
 function render() {
-  ctx.fillStyle = CONFIG.video.backgroundColor;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  const w = mainCanvas.width;
+  const h = mainCanvas.height;
   
-  let points = [];
+  // Clear
+  mainCtx.fillStyle = '#000';
+  mainCtx.fillRect(0, 0, w, h);
   
-  if (currentScene === 'logo') {
-    points = generateLogoPoints();
-  } else if (ASSETS[currentScene]) {
-    points = transformAsset(ASSETS[currentScene], currentScene);
-  }
+  // Draw boundary
+  const tl = worldToScreen(0, 0);
+  const br = worldToScreen(WIDTH, HEIGHT);
+  mainCtx.strokeStyle = '#333';
+  mainCtx.lineWidth = 1;
+  mainCtx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
   
   // Draw dots
-  ctx.fillStyle = CONFIG.particles.color;
-  ctx.globalAlpha = CONFIG.particles.dotOpacity;
-  
-  for (const p of points) {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r * (CONFIG.particles.defaultSize / 3), 0, Math.PI * 2);
-    ctx.fill();
-  }
-  
-  ctx.globalAlpha = 1;
-  
-  // Draw dot count
-  ctx.fillStyle = '#666';
-  ctx.font = '24px monospace';
-  ctx.fillText(`${points.length} dots`, 20, HEIGHT - 20);
-}
-
-// ===================
-// UI GENERATION
-// ===================
-
-function generateSceneControls() {
-  const container = document.getElementById('scene-controls');
-  const cfg = CONFIG.scenes[currentScene];
-  
-  if (!cfg) {
-    container.innerHTML = '<div class="section"><p style="color: #666; font-size: 12px;">Select a scene to edit</p></div>';
-    return;
-  }
-  
-  let html = `<div class="section"><div class="section-title">${currentScene} Settings</div>`;
-  
-  if (currentScene === 'logo') {
-    html += `
-      <div class="control-group">
-        <div class="control-label">
-          <span>Dot Size</span>
-          <span class="control-value" id="logo-dotSize-value">${cfg.dotSize}</span>
-        </div>
-        <input type="range" id="logo-dotSize" min="4" max="20" step="1" value="${cfg.dotSize}">
-      </div>
-      <div class="control-group">
-        <div class="control-label">
-          <span>Gap</span>
-          <span class="control-value" id="logo-gap-value">${cfg.gap}</span>
-        </div>
-        <input type="range" id="logo-gap" min="1" max="10" step="1" value="${cfg.gap}">
-      </div>
-      <div class="control-group">
-        <div class="control-label">
-          <span>Vertical Offset</span>
-          <span class="control-value" id="logo-verticalOffset-value">${cfg.verticalOffset}</span>
-        </div>
-        <input type="range" id="logo-verticalOffset" min="-100" max="100" step="5" value="${cfg.verticalOffset}">
-      </div>
-    `;
-  } else {
-    html += `
-      <div class="control-group">
-        <div class="control-label">
-          <span>Scale</span>
-          <span class="control-value" id="${currentScene}-scale-value">${cfg.scale}</span>
-        </div>
-        <input type="range" id="${currentScene}-scale" min="0.5" max="2" step="0.05" value="${cfg.scale}">
-      </div>
-      <div class="control-group">
-        <div class="control-label">
-          <span>Offset X</span>
-          <span class="control-value" id="${currentScene}-offsetX-value">${cfg.offsetX}</span>
-        </div>
-        <input type="range" id="${currentScene}-offsetX" min="-300" max="300" step="10" value="${cfg.offsetX}">
-      </div>
-      <div class="control-group">
-        <div class="control-label">
-          <span>Offset Y</span>
-          <span class="control-value" id="${currentScene}-offsetY-value">${cfg.offsetY}</span>
-        </div>
-        <input type="range" id="${currentScene}-offsetY" min="-300" max="300" step="10" value="${cfg.offsetY}">
-      </div>
-      <div class="control-group">
-        <div class="control-label">
-          <span>Dot Scale</span>
-          <span class="control-value" id="${currentScene}-dotScale-value">${cfg.dotScale}</span>
-        </div>
-        <input type="range" id="${currentScene}-dotScale" min="0.5" max="1.5" step="0.05" value="${cfg.dotScale}">
-      </div>
-    `;
+  for (const dot of dots) {
+    const pos = worldToScreen(dot.x, dot.y);
+    const r = dot.r * zoom;
     
-    if (cfg.filterBorder !== undefined) {
-      html += `
-        <div class="control-group">
-          <div class="checkbox-row">
-            <input type="checkbox" id="${currentScene}-filterBorder" ${cfg.filterBorder ? 'checked' : ''}>
-            <label for="${currentScene}-filterBorder">Filter Border</label>
-          </div>
-        </div>
-      `;
-      
-      if (cfg.filterBorder) {
-        html += `
-          <div class="control-group">
-            <div class="control-label">
-              <span>Border Left</span>
-              <span class="control-value" id="${currentScene}-borderLeft-value">${cfg.borderLeft}</span>
-            </div>
-            <input type="range" id="${currentScene}-borderLeft" min="0" max="500" step="10" value="${cfg.borderLeft}">
-          </div>
-          <div class="control-group">
-            <div class="control-label">
-              <span>Border Right</span>
-              <span class="control-value" id="${currentScene}-borderRight-value">${cfg.borderRight}</span>
-            </div>
-            <input type="range" id="${currentScene}-borderRight" min="1000" max="1536" step="10" value="${cfg.borderRight}">
-          </div>
-          <div class="control-group">
-            <div class="control-label">
-              <span>Border Top</span>
-              <span class="control-value" id="${currentScene}-borderTop-value">${cfg.borderTop}</span>
-            </div>
-            <input type="range" id="${currentScene}-borderTop" min="0" max="500" step="10" value="${cfg.borderTop}">
-          </div>
-          <div class="control-group">
-            <div class="control-label">
-              <span>Border Bottom</span>
-              <span class="control-value" id="${currentScene}-borderBottom-value">${cfg.borderBottom}</span>
-            </div>
-            <input type="range" id="${currentScene}-borderBottom" min="500" max="1500" step="10" value="${cfg.borderBottom}">
-          </div>
-        `;
-      }
+    // Draw dot
+    mainCtx.beginPath();
+    mainCtx.arc(pos.x, pos.y, Math.max(r, 1), 0, Math.PI * 2);
+    mainCtx.fillStyle = dot.color || '#ffffff';
+    mainCtx.fill();
+    
+    // Draw selection ring
+    if (dot.selected) {
+      mainCtx.strokeStyle = '#00d9ff';
+      mainCtx.lineWidth = 2;
+      mainCtx.beginPath();
+      mainCtx.arc(pos.x, pos.y, Math.max(r + 4, 6), 0, Math.PI * 2);
+      mainCtx.stroke();
     }
   }
   
-  html += '</div>';
-  container.innerHTML = html;
-  
-  // Attach event listeners
-  attachControlListeners();
+  // Update status
+  updateStatus();
 }
 
-function attachControlListeners() {
-  const cfg = CONFIG.scenes[currentScene];
-  if (!cfg) return;
+function renderSelection() {
+  const w = selCanvas.width;
+  const h = selCanvas.height;
   
-  const controls = document.querySelectorAll('#scene-controls input');
-  controls.forEach(input => {
-    input.addEventListener('input', (e) => {
-      const id = e.target.id;
-      const parts = id.split('-');
-      const prop = parts.slice(1).join('-');
-      
-      if (e.target.type === 'checkbox') {
-        cfg[prop] = e.target.checked;
-        generateSceneControls(); // Rebuild to show/hide border controls
-      } else {
-        const value = parseFloat(e.target.value);
-        cfg[prop] = value;
-        
-        const valueDisplay = document.getElementById(id + '-value');
-        if (valueDisplay) {
-          valueDisplay.textContent = value;
-        }
+  selCtx.clearRect(0, 0, w, h);
+  
+  // Draw selection box
+  if (selectionBox) {
+    selCtx.strokeStyle = '#00d9ff';
+    selCtx.lineWidth = 1;
+    selCtx.setLineDash([5, 5]);
+    selCtx.strokeRect(
+      selectionBox.x, selectionBox.y,
+      selectionBox.w, selectionBox.h
+    );
+    selCtx.fillStyle = 'rgba(0, 217, 255, 0.1)';
+    selCtx.fillRect(
+      selectionBox.x, selectionBox.y,
+      selectionBox.w, selectionBox.h
+    );
+    selCtx.setLineDash([]);
+  }
+  
+  // Draw lasso
+  if (lassoPoints.length > 1) {
+    selCtx.strokeStyle = '#00d9ff';
+    selCtx.lineWidth = 1;
+    selCtx.setLineDash([5, 5]);
+    selCtx.beginPath();
+    selCtx.moveTo(lassoPoints[0].x, lassoPoints[0].y);
+    for (let i = 1; i < lassoPoints.length; i++) {
+      selCtx.lineTo(lassoPoints[i].x, lassoPoints[i].y);
+    }
+    selCtx.stroke();
+    selCtx.setLineDash([]);
+  }
+}
+
+// ===================
+// DOT OPERATIONS
+// ===================
+
+function findDotAt(wx, wy, threshold = 10) {
+  const th = threshold / zoom;
+  for (let i = dots.length - 1; i >= 0; i--) {
+    const dot = dots[i];
+    const dx = dot.x - wx;
+    const dy = dot.y - wy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist <= Math.max(dot.r, th)) {
+      return dot;
+    }
+  }
+  return null;
+}
+
+function selectDotsInBox(x1, y1, x2, y2, additive = false) {
+  const minX = Math.min(x1, x2);
+  const maxX = Math.max(x1, x2);
+  const minY = Math.min(y1, y2);
+  const maxY = Math.max(y1, y2);
+  
+  if (!additive) {
+    dots.forEach(d => d.selected = false);
+  }
+  
+  for (const dot of dots) {
+    if (dot.x >= minX && dot.x <= maxX && dot.y >= minY && dot.y <= maxY) {
+      dot.selected = true;
+    }
+  }
+}
+
+function selectDotsInLasso(points, additive = false) {
+  if (!additive) {
+    dots.forEach(d => d.selected = false);
+  }
+  
+  for (const dot of dots) {
+    if (pointInPolygon(dot.x, dot.y, points)) {
+      dot.selected = true;
+    }
+  }
+}
+
+function pointInPolygon(x, y, polygon) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x, yi = polygon[i].y;
+    const xj = polygon[j].x, yj = polygon[j].y;
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function getSelectedDots() {
+  return dots.filter(d => d.selected);
+}
+
+function setSelectedColor(color) {
+  for (const dot of dots) {
+    if (dot.selected) {
+      dot.color = color;
+    }
+  }
+  render();
+}
+
+function setSelectedSize(size) {
+  for (const dot of dots) {
+    if (dot.selected) {
+      dot.r = size;
+    }
+  }
+  render();
+}
+
+function deleteSelected() {
+  dots = dots.filter(d => !d.selected);
+  render();
+  updateSelectionCount();
+}
+
+function selectAll() {
+  dots.forEach(d => d.selected = true);
+  render();
+  updateSelectionCount();
+}
+
+function deselectAll() {
+  dots.forEach(d => d.selected = false);
+  render();
+  updateSelectionCount();
+}
+
+function invertSelection() {
+  dots.forEach(d => d.selected = !d.selected);
+  render();
+  updateSelectionCount();
+}
+
+function addDot(x, y) {
+  dots.push({
+    x, y,
+    r: currentSize,
+    color: currentColor,
+    selected: false
+  });
+  render();
+}
+
+// ===================
+// EVENT HANDLERS
+// ===================
+
+mainCanvas.addEventListener('mousedown', (e) => {
+  const rect = mainCanvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const world = screenToWorld(sx, sy);
+  
+  // Pan with space or middle mouse
+  if (spacePressed || e.button === 1 || currentTool === 'pan') {
+    isPanning = true;
+    dragStart = { x: e.clientX - panX, y: e.clientY - panY };
+    mainCanvas.style.cursor = 'grabbing';
+    return;
+  }
+  
+  isDragging = true;
+  dragStart = { x: sx, y: sy };
+  
+  if (currentTool === 'select') {
+    const dot = findDotAt(world.x, world.y);
+    if (dot) {
+      if (!e.shiftKey && !dot.selected) {
+        deselectAll();
       }
-      
+      dot.selected = true;
       render();
-    });
-  });
-}
-
-// ===================
-// GLOBAL CONTROLS
-// ===================
-
-document.getElementById('dotSize').addEventListener('input', (e) => {
-  CONFIG.particles.defaultSize = parseFloat(e.target.value);
-  document.getElementById('dotSize-value').textContent = e.target.value;
-  render();
-});
-
-document.getElementById('dotOpacity').addEventListener('input', (e) => {
-  CONFIG.particles.dotOpacity = parseFloat(e.target.value);
-  document.getElementById('dotOpacity-value').textContent = e.target.value;
-  render();
-});
-
-// ===================
-// SCENE SELECTOR
-// ===================
-
-document.querySelectorAll('.scene-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    currentScene = e.target.dataset.scene;
-    generateSceneControls();
-    render();
-  });
-});
-
-// ===================
-// PLAYBACK
-// ===================
-
-const playBtn = document.getElementById('play-btn');
-const resetBtn = document.getElementById('reset-btn');
-const timelineSlider = document.getElementById('timeline-slider');
-const frameDisplay = document.getElementById('frame-display');
-const timeDisplay = document.getElementById('time-display');
-
-function updateTimeDisplay() {
-  frameDisplay.textContent = currentFrame;
-  const seconds = currentFrame / CONFIG.video.fps;
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-  timelineSlider.value = currentFrame;
-}
-
-playBtn.addEventListener('click', () => {
-  isPlaying = !isPlaying;
-  playBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
-  
-  if (isPlaying) {
-    animate();
-  } else {
-    cancelAnimationFrame(animationId);
+      updateSelectionCount();
+    } else if (!e.shiftKey) {
+      deselectAll();
+    }
+  } else if (currentTool === 'box-select') {
+    selectionBox = { x: sx, y: sy, w: 0, h: 0 };
+  } else if (currentTool === 'lasso') {
+    lassoPoints = [{ x: sx, y: sy }];
+  } else if (currentTool === 'draw') {
+    addDot(world.x, world.y);
+  } else if (currentTool === 'erase') {
+    const dot = findDotAt(world.x, world.y);
+    if (dot) {
+      dots = dots.filter(d => d !== dot);
+      render();
+    }
   }
 });
 
-resetBtn.addEventListener('click', () => {
-  currentFrame = 0;
-  updateTimeDisplay();
+mainCanvas.addEventListener('mousemove', (e) => {
+  const rect = mainCanvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  const world = screenToWorld(sx, sy);
+  
+  // Update position display
+  document.getElementById('status-pos').textContent = 
+    `x: ${Math.round(world.x)}, y: ${Math.round(world.y)}`;
+  
+  if (isPanning) {
+    panX = e.clientX - dragStart.x;
+    panY = e.clientY - dragStart.y;
+    render();
+    return;
+  }
+  
+  if (!isDragging) return;
+  
+  if (currentTool === 'box-select' && selectionBox) {
+    selectionBox.w = sx - selectionBox.x;
+    selectionBox.h = sy - selectionBox.y;
+    renderSelection();
+  } else if (currentTool === 'lasso') {
+    lassoPoints.push({ x: sx, y: sy });
+    renderSelection();
+  } else if (currentTool === 'draw') {
+    // Draw continuously
+    addDot(world.x, world.y);
+  } else if (currentTool === 'erase') {
+    const dot = findDotAt(world.x, world.y);
+    if (dot) {
+      dots = dots.filter(d => d !== dot);
+      render();
+    }
+  }
+});
+
+mainCanvas.addEventListener('mouseup', (e) => {
+  if (isPanning) {
+    isPanning = false;
+    mainCanvas.style.cursor = currentTool === 'pan' ? 'grab' : 'crosshair';
+    return;
+  }
+  
+  if (!isDragging) return;
+  isDragging = false;
+  
+  const rect = mainCanvas.getBoundingClientRect();
+  const sx = e.clientX - rect.left;
+  const sy = e.clientY - rect.top;
+  
+  if (currentTool === 'box-select' && selectionBox) {
+    const p1 = screenToWorld(selectionBox.x, selectionBox.y);
+    const p2 = screenToWorld(selectionBox.x + selectionBox.w, selectionBox.y + selectionBox.h);
+    selectDotsInBox(p1.x, p1.y, p2.x, p2.y, e.shiftKey);
+    selectionBox = null;
+    renderSelection();
+    render();
+    updateSelectionCount();
+  } else if (currentTool === 'lasso' && lassoPoints.length > 2) {
+    const worldPoints = lassoPoints.map(p => screenToWorld(p.x, p.y));
+    selectDotsInLasso(worldPoints, e.shiftKey);
+    lassoPoints = [];
+    renderSelection();
+    render();
+    updateSelectionCount();
+  }
+});
+
+mainCanvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = mainCanvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  
+  const oldZoom = zoom;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  zoom = Math.max(0.1, Math.min(10, zoom * delta));
+  
+  // Zoom toward mouse position
+  const scale = zoom / oldZoom;
+  panX = mx - scale * (mx - panX);
+  panY = my - scale * (my - panY);
+  
+  updateZoomIndicator();
   render();
 });
 
-timelineSlider.addEventListener('input', (e) => {
-  currentFrame = parseInt(e.target.value);
-  updateTimeDisplay();
-  // Could animate between scenes based on frame here
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' && !spacePressed) {
+    spacePressed = true;
+    mainCanvas.style.cursor = 'grab';
+  }
+  
+  if (e.key === 'v' || e.key === 'V') setTool('select');
+  if (e.key === 'm' || e.key === 'M') setTool('box-select');
+  if (e.key === 'l' || e.key === 'L') setTool('lasso');
+  if (e.key === 'd' || e.key === 'D') setTool('draw');
+  if (e.key === 'e' || e.key === 'E') setTool('erase');
+  
+  if (e.key === 'Escape') deselectAll();
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+    e.preventDefault();
+    selectAll();
+  }
+  
+  if (e.key === '0') {
+    zoom = 1;
+    panX = 0;
+    panY = 0;
+    updateZoomIndicator();
+    render();
+  }
+  
+  if (e.key === '?' || e.key === '/') {
+    document.getElementById('shortcuts-overlay').classList.toggle('show');
+  }
 });
 
-function animate() {
-  if (!isPlaying) return;
-  
-  currentFrame++;
-  if (currentFrame > 764) currentFrame = 0;
-  
-  updateTimeDisplay();
-  render();
-  
-  animationId = requestAnimationFrame(animate);
+document.addEventListener('keyup', (e) => {
+  if (e.key === ' ') {
+    spacePressed = false;
+    mainCanvas.style.cursor = 'crosshair';
+  }
+});
+
+// Prevent context menu
+mainCanvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// ===================
+// UI HANDLERS
+// ===================
+
+function setTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tool === tool);
+  });
+  mainCanvas.style.cursor = tool === 'pan' ? 'grab' : 'crosshair';
 }
 
+document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+  btn.addEventListener('click', () => setTool(btn.dataset.tool));
+});
+
+// Scene selector
+document.querySelectorAll('.scene-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadScene(btn.dataset.scene);
+  });
+});
+
+// Color presets
+document.querySelectorAll('.color-preset').forEach(preset => {
+  preset.addEventListener('click', () => {
+    document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+    preset.classList.add('active');
+    currentColor = preset.dataset.color;
+    document.getElementById('color-picker').value = currentColor;
+    document.getElementById('color-hex').value = currentColor;
+    setSelectedColor(currentColor);
+  });
+});
+
+// Color picker
+document.getElementById('color-picker').addEventListener('input', (e) => {
+  currentColor = e.target.value;
+  document.getElementById('color-hex').value = currentColor;
+  document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+  setSelectedColor(currentColor);
+});
+
+document.getElementById('color-hex').addEventListener('change', (e) => {
+  let val = e.target.value;
+  if (!val.startsWith('#')) val = '#' + val;
+  if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+    currentColor = val;
+    document.getElementById('color-picker').value = currentColor;
+    document.querySelectorAll('.color-preset').forEach(p => p.classList.remove('active'));
+    setSelectedColor(currentColor);
+  }
+});
+
+// Size slider
+document.getElementById('size-slider').addEventListener('input', (e) => {
+  currentSize = parseFloat(e.target.value);
+  document.getElementById('size-value').textContent = currentSize;
+  setSelectedSize(currentSize);
+});
+
+// Actions
+document.getElementById('select-all-btn').addEventListener('click', selectAll);
+document.getElementById('deselect-btn').addEventListener('click', deselectAll);
+document.getElementById('invert-btn').addEventListener('click', invertSelection);
+document.getElementById('delete-btn').addEventListener('click', deleteSelected);
+document.getElementById('shortcuts-btn').addEventListener('click', () => {
+  document.getElementById('shortcuts-overlay').classList.toggle('show');
+});
+
+// Export
+document.getElementById('export-btn').addEventListener('click', () => {
+  const code = generateAssetCode();
+  navigator.clipboard.writeText(code).then(() => showToast('Copied to clipboard!'));
+});
+
+document.getElementById('download-btn').addEventListener('click', () => {
+  const code = generateAssetCode();
+  const blob = new Blob([code], { type: 'text/typescript' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${currentScene}Dots.ts`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`Downloaded ${currentScene}Dots.ts`);
+});
+
 // ===================
-// EXPORT
+// UTILITIES
 // ===================
 
-function generateConfigCode() {
-  return `// Generated by Isometry Editor
-// ${new Date().toISOString()}
+function updateSelectionCount() {
+  const count = getSelectedDots().length;
+  document.getElementById('selection-count').textContent = count;
+}
 
-export const CONFIG = {
-  video: {
-    width: ${CONFIG.video.width},
-    height: ${CONFIG.video.height},
-    fps: ${CONFIG.video.fps},
-    backgroundColor: '${CONFIG.video.backgroundColor}',
-  },
+function updateStatus() {
+  document.getElementById('status-dots').textContent = `${dots.length} dots`;
+}
 
-  particles: {
-    count: ${CONFIG.particles.count},
-    defaultSize: ${CONFIG.particles.defaultSize},
-    color: '${CONFIG.particles.color}',
-    transitionEasing: 0.08,
-  },
-
-  timing: {
-    STATE_A: 0,
-    STATE_B: 90,
-    STATE_C: 180,
-    STATE_D: 300,
-    STATE_E: 420,
-    STATE_F: 540,
-    STATE_G: 660,
-    TOTAL_FRAMES: 765,
-  },
-
-  scenes: {
-    logo: {
-      dotSize: ${CONFIG.scenes.logo.dotSize},
-      gap: ${CONFIG.scenes.logo.gap},
-      verticalOffset: ${CONFIG.scenes.logo.verticalOffset},
-    },
-
-    brain: {
-      scale: ${CONFIG.scenes.brain.scale},
-      offsetX: ${CONFIG.scenes.brain.offsetX},
-      offsetY: ${CONFIG.scenes.brain.offsetY},
-      dotScale: ${CONFIG.scenes.brain.dotScale},
-      sourceWidth: ${CONFIG.scenes.brain.sourceWidth},
-      sourceHeight: ${CONFIG.scenes.brain.sourceHeight},
-    },
-
-    bci: {
-      scale: ${CONFIG.scenes.bci.scale},
-      offsetX: ${CONFIG.scenes.bci.offsetX},
-      offsetY: ${CONFIG.scenes.bci.offsetY},
-      dotScale: ${CONFIG.scenes.bci.dotScale},
-      filterBorder: ${CONFIG.scenes.bci.filterBorder},
-      borderFilter: {
-        leftEdge: ${CONFIG.scenes.bci.borderLeft},
-        rightEdge: ${CONFIG.scenes.bci.borderRight},
-        topEdge: ${CONFIG.scenes.bci.borderTop},
-        bottomEdge: ${CONFIG.scenes.bci.borderBottom},
-        mode: 'corners',
-      },
-      sourceWidth: ${CONFIG.scenes.bci.sourceWidth},
-      sourceHeight: ${CONFIG.scenes.bci.sourceHeight},
-    },
-
-    clinical: {
-      scale: ${CONFIG.scenes.clinical.scale},
-      offsetX: ${CONFIG.scenes.clinical.offsetX},
-      offsetY: ${CONFIG.scenes.clinical.offsetY},
-      dotScale: ${CONFIG.scenes.clinical.dotScale},
-      filterBorder: ${CONFIG.scenes.clinical.filterBorder},
-      borderFilter: {
-        leftEdge: ${CONFIG.scenes.clinical.borderLeft},
-        rightEdge: ${CONFIG.scenes.clinical.borderRight},
-        topEdge: ${CONFIG.scenes.clinical.borderTop},
-        bottomEdge: ${CONFIG.scenes.clinical.borderBottom},
-        mode: 'edges',
-      },
-      sourceWidth: ${CONFIG.scenes.clinical.sourceWidth},
-      sourceHeight: ${CONFIG.scenes.clinical.sourceHeight},
-    },
-
-    assistive: {
-      scale: ${CONFIG.scenes.assistive.scale},
-      offsetX: ${CONFIG.scenes.assistive.offsetX},
-      offsetY: ${CONFIG.scenes.assistive.offsetY},
-      dotScale: ${CONFIG.scenes.assistive.dotScale},
-      filterBorder: ${CONFIG.scenes.assistive.filterBorder},
-      borderFilter: {
-        leftEdge: ${CONFIG.scenes.assistive.borderLeft},
-        rightEdge: ${CONFIG.scenes.assistive.borderRight},
-        topEdge: ${CONFIG.scenes.assistive.borderTop},
-        bottomEdge: ${CONFIG.scenes.assistive.borderBottom},
-        mode: 'edges',
-      },
-      sourceWidth: ${CONFIG.scenes.assistive.sourceWidth},
-      sourceHeight: ${CONFIG.scenes.assistive.sourceHeight},
-    },
-  },
-};
-`;
+function updateZoomIndicator() {
+  document.getElementById('zoom-indicator').textContent = `${Math.round(zoom * 100)}%`;
 }
 
 function showToast(message) {
@@ -577,52 +567,107 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 2000);
 }
 
-document.getElementById('export-btn').addEventListener('click', () => {
-  const code = generateConfigCode();
-  navigator.clipboard.writeText(code).then(() => {
-    showToast('Config copied to clipboard!');
-  });
-});
-
-document.getElementById('download-btn').addEventListener('click', () => {
-  const code = generateConfigCode();
-  const blob = new Blob([code], { type: 'text/typescript' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'config.ts';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Downloaded config.ts');
-});
-
-// ===================
-// LOAD ASSETS
-// ===================
-
-async function loadAssets() {
-  try {
-    // Load bundled assets from JSON
-    const response = await fetch('assets.json');
-    const data = await response.json();
-    
-    ASSETS = data;
-    
-    for (const [name, dots] of Object.entries(ASSETS)) {
-      console.log(`Loaded ${name}: ${dots.length} dots`);
-    }
-  } catch (e) {
-    console.warn('Asset loading failed:', e);
-    console.log('Run "node editor/bundle-assets.js" to generate assets.json');
+function generateAssetCode() {
+  const name = currentScene.toUpperCase() + '_DOTS_SOURCE';
+  let code = `// Generated by Isometry Editor\n`;
+  code += `// ${new Date().toISOString()}\n\n`;
+  code += `export const ${name}: Array<[number, number, number, string]> = [\n`;
+  
+  for (const dot of dots) {
+    code += `  [${dot.x.toFixed(3)}, ${dot.y.toFixed(3)}, ${dot.r.toFixed(3)}, "${dot.color}"],\n`;
   }
   
-  // Initial render
-  generateSceneControls();
-  render();
+  code += `];\n`;
+  return code;
 }
 
 // ===================
-// INIT
+// SCENE LOADING
 // ===================
 
-loadAssets();
+function loadScene(sceneName) {
+  currentScene = sceneName;
+  dots = [];
+  
+  if (sceneName === 'logo') {
+    dots = generateLogoDots();
+  } else if (ASSETS[sceneName]) {
+    // Load from bundled assets
+    const source = ASSETS[sceneName];
+    for (const [x, y, r] of source) {
+      dots.push({ x, y, r, color: '#ffffff', selected: false });
+    }
+  }
+  
+  // Reset view
+  zoom = 0.5;
+  panX = 0;
+  panY = 0;
+  updateZoomIndicator();
+  render();
+  updateStatus();
+}
+
+function generateLogoDots() {
+  const FONT = {
+    I: ["111", "010", "010", "010", "111"],
+    S: ["1111", "1000", "1110", "0001", "1110"],
+    O: ["1111", "1001", "1001", "1001", "1111"],
+    M: ["10001", "11011", "10101", "10001", "10001"],
+    E: ["1111", "1000", "1110", "1000", "1111"],
+    T: ["11111", "00100", "00100", "00100", "00100"],
+    R: ["1110", "1001", "1110", "1010", "1001"],
+    Y: ["10001", "01010", "00100", "00100", "00100"],
+  };
+  
+  const dotSize = 9;
+  const gap = 4;
+  const text = "ISOMETRY";
+  const rows = 5;
+  const chars = text.split("");
+  const colsPerChar = chars.map(c => FONT[c] ? FONT[c][0].length : 0);
+  const totalCols = colsPerChar.reduce((a, b) => a + b, 0) + (chars.length - 1);
+  const startX = WIDTH / 2 - (totalCols * (dotSize + gap)) / 2;
+  const startY = HEIGHT / 2 - (rows * (dotSize + gap)) / 2 + 20;
+  
+  const result = [];
+  let cursor = 0;
+  chars.forEach(ch => {
+    const glyph = FONT[ch];
+    if (!glyph) return;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < glyph[r].length; c++) {
+        if (glyph[r][c] === '1') {
+          result.push({
+            x: startX + (cursor + c) * (dotSize + gap),
+            y: startY + r * (dotSize + gap),
+            r: dotSize / 2,
+            color: '#ffffff',
+            selected: false
+          });
+        }
+      }
+    }
+    cursor += glyph[0].length + 1;
+  });
+  return result;
+}
+
+// ===================
+// LOAD ASSETS & INIT
+// ===================
+
+async function init() {
+  try {
+    const response = await fetch('assets.json');
+    ASSETS = await response.json();
+    console.log('Assets loaded:', Object.keys(ASSETS));
+  } catch (e) {
+    console.warn('Could not load assets.json:', e);
+  }
+  
+  resizeCanvases();
+  loadScene('logo');
+}
+
+init();
